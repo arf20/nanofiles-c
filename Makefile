@@ -1,22 +1,20 @@
-PROJECT := nanofiles
-BINARY := nanofiles
+CLIENT_TARGET := nanofiles
+DIRECTORY_TARGET := directory
+
 CC := gcc
 CFLAGS := -Wall -pedantic -g -O0
 LDFLAGS := 
 
-SRC := $(wildcard *.c)
-HDR := $(wildcard *.h)
-OBJ := $(patsubst %.c,%.o,$(SRC))
+.PHONY: $(CLIENT_TARGET)/$(CLIENT_TARGET) $(DIRECTORY_TARGET)/$(DIRECTORY_TARGET) clean
 
-all: $(BINARY)
 
-$(BINARY): $(OBJ)
-	$(CC) -o $(BINARY) $(OBJ) $(LDFLAGS)
+$(CLIENT_TARGET)/$(CLIENT_TARGET):
+	make -C $(CLIENT_TARGET)/
 
-%.o: %.c $(HDR)
-	$(CC) -c $(CFLAGS) $<
+$(DIRECTORY_TARGET)/$(DIRECTORY_TARGET):
+	make -C $(DIRECTORY_TARGET)/
 
-.PHONY: clean
 clean:
-	rm -f $(BINARY) *.o
+	make -C $(CLIENT_TARGET)/ clean
+	make -C $(DIRECTORY_TARGET)/ clean
 
