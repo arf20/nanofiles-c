@@ -1,3 +1,4 @@
 *.o
-nanofiles
+nanofiles/nanofiles
+directory/directory
 
