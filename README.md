@@ -6,7 +6,7 @@ I hate java this much
 
 ## Build
 
-Requires: OpenSSL for SHA-1 file hash
+Requires: BSD's libmd-dev for SHA-1 file hash
 
 ```
 make
