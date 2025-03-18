@@ -58,10 +58,10 @@ main(int argc, char **argv)
     }
 
 
-    ctl_t *ctl = ctl_new(shared_dir);
+    ctl_t *ctl = ctl_new(directory_hostname);
 
     if (test_mode_udp)
-        ctl_test_directory(dc);
+        ctl_test_directory(ctl);
 
     return 0;
 }

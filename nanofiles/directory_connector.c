@@ -25,6 +25,9 @@ dc_new(const char *hostname)
     if (dc->addr.sa_family == 0)
         return NULL; /* error prop */
 
+    /* set port, sin_addr is the same field in both in and in6 */
+    ((struct sockaddr_in*)&dc->addr)->sin_port = htons(NF_DIRECTORY_PORT);
+
     /* create socket */
     NF_TRY(
         (dc->sock = socket(dc->addr.sa_family, SOCK_DGRAM, IPPROTO_UDP)) == 0,
@@ -59,11 +62,12 @@ dc_request(dc_t *dc, const char *rdata)
             "sendto", strerror(errno), return NULL
         );
 
-        NF_TRY(
-            recvfrom(dc->sock, recv_buff, MAX_DGRAM_SIZE, 0, &src_addr,
-                &addrlen) < 0,
-            "recvfrom", strerror(errno), return NULL
-        );
+        if (recvfrom(dc->sock, recv_buff, MAX_DGRAM_SIZE, 0, &src_addr,
+                &addrlen) < 0)
+        {
+            NF_TRY(errno != EAGAIN, "recvfrom", strerror(errno), return NULL);
+        } else
+            break;
     }
 
     NF_TRY(
@@ -81,7 +85,7 @@ dc_test(dc_t *dc)
 {
     const char *res = dc_request(dc, "ping");
     if (!res)
-        return -1;
+        return 0;
 
     return strncmp(res, "pingok", 6) == 0;
 }

@@ -1,6 +1,7 @@
 #include "nf_controller.h"
 
 #include <stdlib.h>
+#include <stdio.h>
 
 ctl_t*
 ctl_new(const char *directory_hostname)
@@ -18,6 +19,13 @@ ctl_new(const char *directory_hostname)
 void
 ctl_test_directory(ctl_t *ctl)
 {
-
+    printf("testing connection to directory... ");
+    if (dc_test(ctl->dc)) {
+        printf("online\n");
+        ctl->state = ONLINE;
+    } else {
+        printf("offline\n");
+        ctl->state = OFFLINE;
+    }
 }
 
