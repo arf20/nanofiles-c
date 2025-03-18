@@ -3,6 +3,7 @@
 #include "config.h"
 
 #include "netutil.h"
+#include "util.h"
 #include "dir_message.h"
 
 #include <stdlib.h>

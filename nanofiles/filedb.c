@@ -1,0 +1,108 @@
+#include "filedb.h"
+
+#include "config.h"
+#include "util.h"
+
+#include <stdlib.h>
+#include <dirent.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/stat.h>
+
+#include <sha1.h>
+
+filedb_t*
+filedb_new()
+{
+    filedb_t *db = malloc(sizeof(filedb_t));
+    db->size = 0;
+    db->capacity = 64;
+    db->vec = malloc(sizeof(file_info_t) * db->capacity);
+    return db;
+}
+
+void
+filedb_insert(filedb_t *db, const char *filename, const char *hash, size_t size)
+{
+    if (db->size + 1 > db->capacity) {
+        db->vec = realloc(db->vec, db->capacity * 2);
+    }
+
+    db->vec[db->size].filename = filename;
+    db->vec[db->size].hash = hash;
+    db->vec[db->size].size = size;
+    db->size++;
+}
+
+const char*
+compute_file_hash(const char *filename)
+{
+    static char hashstr[256];
+
+    NF_TRY(
+        SHA1File(filename, hashstr) == NULL,
+        "SHA1File", strerror(errno), return NULL
+    );
+
+    return hashstr;
+}
+
+size_t
+get_file_size(const char *filename)
+{
+    struct stat statbuf;
+    NF_TRY_C(
+        stat(filename, &statbuf) < 0,
+        "stat", strerror(errno), filename, return 0
+    );
+
+    NF_TRY_C(
+        !S_ISREG(statbuf.st_mode),
+        "stat", "Not a regular file", filename, return 0
+    );
+
+    return statbuf.st_size;
+
+}
+
+int
+filedb_scan(filedb_t *db, const char *dirpath)
+{
+    DIR *dir = NULL;
+    static char buff[4096];
+
+    NF_TRY_C(
+        (dir = opendir(dirpath)) == NULL,
+        "opendir", strerror(errno), dirpath, return -1
+    );
+    
+    struct dirent *de = NULL;
+    errno = 0;
+    while ((de = readdir(dir))) {
+        NF_TRY(errno != 0, "readdir", strerror(errno), return -1);
+        errno = 0;
+
+        switch (de->d_type) {
+            case DT_DIR: {
+                if (de->d_name[0] == '.' && (de->d_name[1] == '\0' ||
+                    (de->d_name[1] == '.' && de->d_name[2] == '\0')))   
+                        continue;
+                snprintf(buff, 4096, "%s%s/", dirpath, de->d_name);
+                filedb_scan(db, buff);
+            } break;
+            case DT_REG: {
+                snprintf(buff, 4096, "%s%s", dirpath, de->d_name);
+                filedb_insert(db,
+                    strdup(buff),
+                    strdup(compute_file_hash(buff)),
+                    get_file_size(buff)
+                );
+            } break;
+        }
+    }
+
+    closedir(dir);
+
+    return 0;
+}
+

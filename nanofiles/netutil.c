@@ -1,5 +1,7 @@
 #include "netutil.h"
 
+#include "util.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>

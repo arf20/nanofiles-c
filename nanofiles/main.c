@@ -5,6 +5,8 @@
 
 #include "directory_connector.h"
 
+#include "filedb.h"
+
 void
 usage(const char *argv0)
 {
@@ -34,5 +36,18 @@ main(int argc, char **argv)
             usage(argv[0]);
     }
 
+    printf("scanning %s...\n", shared_dirname);
+
+    filedb_t *db = filedb_new();
+    if (filedb_scan(db, shared_dirname) < 0)
+        return 1;
+
+    printf("files:\t%-*s\tsize\tfilename\n", 40, "hash");
+    for (int i = 0; i < db->size; i++) {
+        printf("\t%s\t%ld\t%s\n", db->vec[i].hash, db->vec[i].size,
+            db->vec[i].filename);
+    }
+
+    return 0;
 }
 

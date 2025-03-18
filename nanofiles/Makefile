@@ -4,6 +4,9 @@ SRC := $(wildcard *.c)
 HDR := $(wildcard *.h)
 OBJ := $(patsubst %.c,%.o,$(SRC))
 
+CFLAGS := -g -O0 -Wall -pedantic
+LDFLAGS := -lmd
+
 all: $(BINARY)
 
 $(BINARY): $(OBJ)
