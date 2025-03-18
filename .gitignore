@@ -1,4 +1,5 @@
 *.o
 nanofiles/nanofiles
+nanofiles/nf-shared/
 directory/directory
 
