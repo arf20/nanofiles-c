@@ -1,11 +1,11 @@
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/config.h"
+#include "../common/filedb.h"
+
 #include "directory_connector.h"
-#include "filedb.h"
 #include "nf_controller.h"
 
 void

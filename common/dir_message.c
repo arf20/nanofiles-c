@@ -25,14 +25,14 @@ dm_filelist()
 }
 
 const char*
-dm_publish(db_t *db)
+dm_publish(filedb_t *db)
 {
-    int len = 0:
+    int len = 0;
     len += snprintf(buff, MAX_DGRAM_SIZE, "operation: publish\n");
    
     for (int i = 0; i < db->size; i++) {
         len += snprintf(buff + len, MAX_DGRAM_SIZE - len,
-            "%s: %d: %s\n",
+            "%s: %ld: %s\n",
             db->vec[i].hash, db->vec[i].size, db->vec[i].filename);
     }
      
@@ -49,7 +49,7 @@ dm_pingok()
 }
 
 const char*
-dm_filelistres(db_t *db)
+dm_filelistres(filedb_t *db)
 {
     snprintf(buff, MAX_DGRAM_SIZE, "operation: filelistres\n");
     /* TODO */

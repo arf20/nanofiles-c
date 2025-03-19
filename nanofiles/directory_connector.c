@@ -1,10 +1,10 @@
 #include "directory_connector.h"
 
-#include "config.h"
+#include "../common/config.h"
 
-#include "netutil.h"
-#include "util.h"
-#include "dir_message.h"
+#include "../common/netutil.h"
+#include "../common/util.h"
+#include "../common/dir_message.h"
 
 #include <stdlib.h>
 #include <stdio.h>
