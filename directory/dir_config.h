@@ -1,0 +1,7 @@
+#ifndef _DIR_CONFIG_H
+#define _DIR_CONFIG_H
+
+#define DEFAULT_CORRUPTION_PROBABILITY  0.0f
+
+#endif /* _DIR_CONFIG_H */
+

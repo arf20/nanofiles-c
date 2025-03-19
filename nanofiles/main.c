@@ -1,12 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "../common/config.h"
 #include "../common/filedb.h"
 
+#include "nf_config.h"
 #include "directory_connector.h"
 #include "nf_controller.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 void
 usage(const char *argv0)
@@ -56,7 +57,6 @@ main(int argc, char **argv)
         printf("\t%s\t%ld\t%s\n", db->vec[i].hash, db->vec[i].size,
             db->vec[i].filename);
     }
-
 
     ctl_t *ctl = ctl_new(directory_hostname);
 

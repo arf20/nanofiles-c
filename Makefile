@@ -36,7 +36,7 @@ build/$(NF_TARGET)_obj/%.o: $(NF_TARGET)/%.c
 build/$(DIR_TARGET)_obj/%.o: $(DIR_TARGET)/%.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-.PHONY: clean
+.PHONY: clean doc
 clean:
 	rm -f build/$(NF_TARGET) build/$(DIR_TARGET) build/*.o
 
