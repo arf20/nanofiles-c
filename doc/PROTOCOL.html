@@ -1,5 +1,6 @@
 <h1 id="nanofiles-c-protocol-specification">nanofiles-c protocol
 specification</h1>
+<p>Revision B</p>
 <h3 id="notation">Notation</h3>
 <ul>
 <li>asdf: static data</li>
@@ -9,7 +10,8 @@ specification</h1>
 <li>All sizes are in bytes</li>
 </ul>
 <h2 id="directory-protocol">Directory protocol</h2>
-<p>UTF-8 encoded text/plain in key:value format over simple UDP</p>
+<p>UTF-8 encoded text/plain in key:value format over simple UDP.
+Whitespaces are stripped.</p>
 <h3 id="client-requests">Client requests</h3>
 <h4 id="ping-request">Ping request</h4>
 <p>Test the connection and compatibility</p>
@@ -21,8 +23,8 @@ specification</h1>
 </ul></li>
 <li>Answer ‘ping reply’</li>
 </ul>
-<pre><code>operation:ping
-[protocol:&lt;protocol id&gt;]
+<pre><code>operation: ping
+protocol: &lt;protocol id&gt;
 </code></pre>
 <h4 id="filelist-request">Filelist request</h4>
 <p>Get file information known by directory</p>
@@ -31,7 +33,7 @@ specification</h1>
 <li>Fields: None</li>
 <li>Answer ‘filelist reply [bad]’</li>
 </ul>
-<pre><code>operation:filelist
+<pre><code>operation: filelist
 </code></pre>
 <h4 id="publish-requst">Publish requst</h4>
 <p>Inform directory of list available files for download from client</p>
@@ -42,62 +44,55 @@ specification</h1>
 </ul>
 <pre><code>operation: publish
 [port: &lt;port&gt;]
-&lt;filename1&gt;: &lt;size1&gt;; &lt;hash1&gt;
-&lt;filename2&gt;: &lt;size2&gt;; &lt;hash2&gt;
+&lt;hash1&gt;: &lt;filename1&gt;; &lt;size1&gt;
+&lt;hash2&gt;: &lt;filename2&gt;; &lt;size2&gt;
 [...]
 </code></pre>
 <h3 id="directory-responses">Directory responses</h3>
 <h4 id="ping-reply">Ping reply</h4>
 <p>Acknoledges back connection and informs client of compatibility</p>
 <ul>
-<li>Operation <code>pingOk</code></li>
+<li>Operation <code>pingok</code></li>
 <li>Fields: None</li>
 <li>Answer to ‘ping request’</li>
 </ul>
-<pre><code>operation:pingOk
+<pre><code>operation: pingok
 </code></pre>
 <h4 id="filelist-reply">Filelist reply</h4>
 <p>Send back list of known (filename, hash, size and peers) for every
 file known</p>
 <ul>
-<li>Operation <code>filelistRes</code></li>
+<li>Operation <code>filelistres</code></li>
 <li>Fields: (see below), the list can be empty</li>
 <li>Answer to ‘filelist request’</li>
 </ul>
-<pre><code>operation:filelistRes
-&lt;filename1&gt;:&lt;size1&gt;;&lt;hash1&gt;;&lt;server1a&gt;,&lt;server1b&gt;[...]
-&lt;filename2&gt;:&lt;size2&gt;;&lt;hash2&gt;;&lt;server2a&gt;,&lt;server2b&gt;[...]
+<pre><code>operation: filelistres
+&lt;hash1&gt;: &lt;filename1&gt;; &lt;size1&gt;; &lt;server1a&gt;, &lt;server1b&gt; [...]
+&lt;hash2&gt;: &lt;filename2&gt;; &lt;size2&gt;; &lt;server2a&gt;, &lt;server2b&gt; [...]
 [...]
-</code></pre>
-<h4 id="filelist-reply-bad">Filelist reply bad</h4>
-<p>Inform client of an error condition on the directory</p>
-<ul>
-<li>Operation <code>filelistBad</code></li>
-<li>Fields: None</li>
-<li>Answer to ‘filelist request’</li>
-</ul>
-<pre><code>operation:filelistBad
 </code></pre>
 <h4 id="publish-reply">Publish reply</h4>
 <p>Acknowledge publish request</p>
 <ul>
-<li>Operation <code>publishAck</code></li>
+<li>Operation <code>publishack</code></li>
 <li>Fields: None</li>
 <li>Answer to: ‘publish request’</li>
 </ul>
-<pre><code>operation:publishAck
+<pre><code>operation: publishack
 </code></pre>
 <h2 id="peer-protocol">Peer protocol</h2>
 <p>Binary little-endian over TCP buffers</p>
 <p>All messages begin with an opcode byte</p>
 <h3 id="client-requests-1">Client requests</h3>
+<p>Opcode in 0x0X</p>
 <h4 id="file-request">File request</h4>
 <p>Requests availability of file to be downloaded</p>
 <ul>
-<li>Opcode: 0x02</li>
+<li>Opcode: 0x01</li>
 <li>Fields:
 <ul>
-<li>fnamelen: Filename length</li>
+<li>fnamelen[1]: Filename length</li>
+<li>filename[fnamelen]: Filename</li>
 </ul></li>
 <li>Answer: ‘accepted’ or ‘file not found error’</li>
 </ul>
@@ -107,16 +102,16 @@ file known</p>
 +-----------------+
 | filename        |
 | ...             |</code></pre>
-<h4 id="get-chunk">Get chunk</h4>
-<p>Requests availability of file to be downloaded</p>
+<h4 id="chunk-request">Chunk request</h4>
+<p>Asks server to send a chunk</p>
 <ul>
-<li>Opcode: 0x04</li>
+<li>Opcode: 0x02</li>
 <li>Fields:
 <ul>
 <li>offset[8]: Starting byte of chunk</li>
 <li>size[4]: Size of chunk</li>
 </ul></li>
-<li>Answer: ‘chunk served’</li>
+<li>Answer: ‘chunk’</li>
 </ul>
 <pre><code>0        1       2       3       4       5       6       7       8         byte
 +--------+----------------------------------------------------------------+
@@ -125,8 +120,9 @@ file known</p>
 | size                          |
 +-------------------------------+</code></pre>
 <h4 id="stop-download">Stop download</h4>
+<p>Terminates current file request</p>
 <ul>
-<li>Opcode: 0x05</li>
+<li>Opcode: 0x03</li>
 <li>Fields: None</li>
 <li>Answer: None</li>
 </ul>
@@ -135,19 +131,11 @@ file known</p>
 | opcode |
 +--------+</code></pre>
 <h3 id="server-requests">Server requests</h3>
-<h4 id="file-not-found-error">File not found error</h4>
-<ul>
-<li>Opcode: 0x01</li>
-<li>Fields: None</li>
-<li>Answer to: ‘file request’</li>
-</ul>
-<pre><code>0               
-+--------+
-| opcode |
-+--------+</code></pre>
+<p>Opcode in 0x1X</p>
 <h4 id="accepted">Accepted</h4>
+<p>File is available to download via chunk requests</p>
 <ul>
-<li>Opcode 0x03</li>
+<li>Opcode 0x11</li>
 <li>Fields: None</li>
 <li>Answer to: ‘file request’</li>
 </ul>
@@ -155,16 +143,27 @@ file known</p>
 +--------+
 | opcode |
 +--------+</code></pre>
-<h4 id="chunk-served">Chunk served</h4>
-<p>Requests availability of file to be downloaded</p>
+<h4 id="bad-chunk-request-error">Bad chunk request error</h4>
+<p>File is unavailable or not found</p>
 <ul>
-<li>Opcode: 0x06</li>
+<li>Opcode: 0x12</li>
+<li>Fields: None</li>
+<li>Answer to: ‘file request’</li>
+</ul>
+<pre><code>0               
++--------+
+| opcode |
++--------+</code></pre>
+<h4 id="chunk">Chunk</h4>
+<p>Data chunk of file</p>
+<ul>
+<li>Opcode: 0x13</li>
 <li>Fields:
 <ul>
 <li>size[4]: Size of chunk</li>
-<li>data:</li>
+<li>data[size]:</li>
 </ul></li>
-<li>Answer to: ‘get chunk’</li>
+<li>Answer to: ‘chunk request’</li>
 </ul>
 <pre><code>0        1       2       3       4       byte
 +--------+------------------------------+

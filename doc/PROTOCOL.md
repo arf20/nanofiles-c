@@ -1,5 +1,7 @@
 # nanofiles-c protocol specification
 
+Revision B
+
 ### Notation
 
  - asdf: static data
@@ -10,7 +12,7 @@
 
 ## Directory protocol
 
-UTF-8 encoded text/plain in key:value format over simple UDP
+UTF-8 encoded text/plain in key:value format over simple UDP. Whitespaces are stripped.
 
 ### Client requests
 
@@ -24,8 +26,8 @@ Test the connection and compatibility
  - Answer 'ping reply'
 
 ```
-operation:ping
-[protocol:<protocol id>]
+operation: ping
+protocol: <protocol id>
 
 ```
 
@@ -38,7 +40,7 @@ Get file information known by directory
  - Answer 'filelist reply [bad]'
 
 ```
-operation:filelist
+operation: filelist
 
 ```
 
@@ -53,12 +55,11 @@ Inform directory of list available files for download from client
 ```
 operation: publish
 [port: <port>]
-<filename1>: <size1>; <hash1>
-<filename2>: <size2>; <hash2>
+<hash1>: <filename1>; <size1>
+<hash2>: <filename2>; <size2>
 [...]
 
 ```
-
 
 ### Directory responses
 
@@ -66,12 +67,12 @@ operation: publish
 
 Acknoledges back connection and informs client of compatibility
 
- - Operation `pingOk`
+ - Operation `pingok`
  - Fields: None
  - Answer to 'ping request'
 
 ```
-operation:pingOk
+operation: pingok
 
 ```
 
@@ -79,28 +80,15 @@ operation:pingOk
 
 Send back list of known (filename, hash, size and peers) for every file known
 
- - Operation `filelistRes`
+ - Operation `filelistres`
  - Fields: (see below), the list can be empty
  - Answer to 'filelist request'
 
 ```
-operation:filelistRes
-<filename1>:<size1>;<hash1>;<server1a>,<server1b>[...]
-<filename2>:<size2>;<hash2>;<server2a>,<server2b>[...]
+operation: filelistres
+<hash1>: <filename1>; <size1>; <server1a>, <server1b> [...]
+<hash2>: <filename2>; <size2>; <server2a>, <server2b> [...]
 [...]
-
-```
-
-#### Filelist reply bad
-
-Inform client of an error condition on the directory
-
- - Operation `filelistBad`
- - Fields: None
- - Answer to 'filelist request'
-
-```
-operation:filelistBad
 
 ```
 
@@ -108,12 +96,12 @@ operation:filelistBad
 
 Acknowledge publish request
 
- - Operation `publishAck`
+ - Operation `publishack`
  - Fields: None
  - Answer to: 'publish request'
 
 ```
-operation:publishAck
+operation: publishack
 
 ```
 
@@ -125,13 +113,16 @@ All messages begin with an opcode byte
 
 ### Client requests
 
+Opcode in 0x0X
+
 #### File request
 
 Requests availability of file to be downloaded
 
- - Opcode: 0x02
+ - Opcode: 0x01
  - Fields: 
-   - fnamelen: Filename length
+   - fnamelen[1]: Filename length
+   - filename[fnamelen]: Filename
  - Answer: 'accepted' or 'file not found error'
 
 ```
@@ -143,15 +134,15 @@ Requests availability of file to be downloaded
 | ...             |
 ```
 
-#### Get chunk
+#### Chunk request
 
-Requests availability of file to be downloaded
+Asks server to send a chunk
 
- - Opcode: 0x04
+ - Opcode: 0x02
  - Fields: 
    - offset[8]: Starting byte of chunk
    - size[4]: Size of chunk
- - Answer: 'chunk served'
+ - Answer: 'chunk'
 
 ```
 0        1       2       3       4       5       6       7       8         byte
@@ -164,7 +155,9 @@ Requests availability of file to be downloaded
 
 #### Stop download
 
- - Opcode: 0x05
+Terminates current file request
+
+ - Opcode: 0x03
  - Fields: None
  - Answer: None
 
@@ -177,22 +170,13 @@ Requests availability of file to be downloaded
 
 ### Server requests
 
-#### File not found error
-
- - Opcode: 0x01
- - Fields: None
- - Answer to: 'file request'
-
-```
-0               
-+--------+
-| opcode |
-+--------+
-```
+Opcode in 0x1X
 
 #### Accepted
 
- - Opcode 0x03
+File is available to download via chunk requests
+
+ - Opcode 0x11
  - Fields: None
  - Answer to: 'file request'
 
@@ -203,15 +187,30 @@ Requests availability of file to be downloaded
 +--------+
 ```
 
-#### Chunk served
+#### Bad chunk request error
 
-Requests availability of file to be downloaded
+File is unavailable or not found
 
- - Opcode: 0x06
+ - Opcode: 0x12
+ - Fields: None
+ - Answer to: 'file request'
+
+```
+0               
++--------+
+| opcode |
++--------+
+```
+
+#### Chunk
+
+Data chunk of file
+
+ - Opcode: 0x13
  - Fields: 
    - size[4]: Size of chunk
-   - data: 
- - Answer to: 'get chunk'
+   - data[size]: 
+ - Answer to: 'chunk request'
 
 ```
 0        1       2       3       4       byte
@@ -221,5 +220,4 @@ Requests availability of file to be downloaded
 | data ...
 |
 ```
-
 
