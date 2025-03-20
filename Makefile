@@ -16,10 +16,16 @@ LD := gcc
 CFLAGS := -g -O0 -Wall -pedantic
 LDFLAGS := -lmd
 
-all: build/ build/$(NF_TARGET) build/$(DIR_TARGET)
+all: build/common_obj build/$(NF_TARGET)_obj build/$(DIR_TARGET)_obj build/$(NF_TARGET) build/$(DIR_TARGET)
 
-build/:
-	mkdir build build/common_obj build/$(NF_TARGET)_obj build/$(DIR_TARGET)_obj
+build/common_obj:
+	mkdir -p build/common_obj
+
+build/$(NF_TARGET)_obj:
+	mkdir -p build/$(NF_TARGET)_obj
+
+build/$(DIR_TARGET)_obj:
+	mkdir -p build/$(DIR_TARGET)_obj
 
 build/$(NF_TARGET): $(NF_OBJ) $(COM_OBJ)
 	$(LD) -o build/$(NF_TARGET) $(NF_OBJ) $(COM_OBJ) $(LDFLAGS)
@@ -38,7 +44,7 @@ build/$(DIR_TARGET)_obj/%.o: $(DIR_TARGET)/%.c
 
 .PHONY: clean doc
 clean:
-	rm -f build/$(NF_TARGET) build/$(DIR_TARGET) build/*.o
+	rm -rf build/$(NF_TARGET) build/$(DIR_TARGET) build/common_obj build/$(NF_TARGET)_obj build/$(DIR_TARGET)_obj
 
 doc: doc/PROTOCOL.html doc/PROTOCOL.pdf
 

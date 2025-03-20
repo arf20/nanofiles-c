@@ -33,8 +33,9 @@ main(int argc, char **argv)
 
     printf("corruption probability: %f\n", corruption_prob); 
 
-    dir_server_t *ds = dir_server_new(corruption_prob);
+    dir_server_t *ds = ds_new(corruption_prob);
 
+    ds_run(ds);
 
     return 0;
 }
