@@ -4,6 +4,7 @@ specification</h1>
 <h3 id="notation">Notation</h3>
 <ul>
 <li>asdf: static data</li>
+<li>a|b: disjunction of options</li>
 <li>&lt; &gt;: mandatory field</li>
 <li>[ ]: optional field</li>
 <li>[…]: last object N times</li>
@@ -31,11 +32,11 @@ protocol: &lt;protocol id&gt;
 <ul>
 <li>Operation <code>filelist</code></li>
 <li>Fields: None</li>
-<li>Answer ‘filelist reply [bad]’</li>
+<li>Answer ‘filelist reply’</li>
 </ul>
 <pre><code>operation: filelist
 </code></pre>
-<h4 id="publish-requst">Publish requst</h4>
+<h4 id="publish-request">Publish request</h4>
 <p>Inform directory of list available files for download from client</p>
 <ul>
 <li>Operation <code>publish</code></li>
@@ -180,3 +181,14 @@ file known</p>
 +--------+------------------------------+
 | data ...
 |</code></pre>
+<h2 id="application-automaton">Application automaton</h2>
+<h3 id="directory-protocol-1">Directory protocol</h3>
+<h4 id="client-automaton">Client automaton</h4>
+<p><img src="doc/img/directory_client.jpg" /></p>
+<h4 id="server-automaton">Server automaton</h4>
+<p><img src="doc/img/directory_server.jpg" /></p>
+<h3 id="peer-protocol-1">Peer protocol</h3>
+<h4 id="client-automaton-1">Client automaton</h4>
+<p><img src="doc/img/peer_client.jpg" /></p>
+<h4 id="server-automaton-1">Server automaton</h4>
+<p><img src="doc/img/peer_server.jpg" /></p>

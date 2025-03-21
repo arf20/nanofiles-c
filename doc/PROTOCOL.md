@@ -1,3 +1,9 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
 # nanofiles-c protocol specification
 
 Revision B
@@ -5,6 +11,7 @@ Revision B
 ### Notation
 
  - asdf: static data
+ - a|b: disjunction of options
  - \< >: mandatory field
  - \[ ]: optional field
  - \[...]: last object N times
@@ -37,14 +44,14 @@ Get file information known by directory
 
  - Operation `filelist`
  - Fields: None
- - Answer 'filelist reply [bad]'
+ - Answer 'filelist reply'
 
 ```
 operation: filelist
 
 ```
 
-#### Publish requst
+#### Publish request
 
 Inform directory of list available files for download from client
 
@@ -88,7 +95,6 @@ Warns the client its using the wrong protocol
 operation: pingbad
 
 ```
-
 
 #### Filelist reply
 
@@ -234,4 +240,26 @@ Data chunk of file
 | data ...
 |
 ```
+
+## Application automaton
+
+### Directory protocol
+
+#### Client automaton
+
+![](doc/img/directory_client.jpg)
+
+#### Server automaton
+
+![](doc/img/directory_server.jpg)
+
+### Peer protocol
+
+#### Client automaton
+
+![](doc/img/peer_client.jpg)
+
+#### Server automaton
+
+![](doc/img/peer_server.jpg)
 
