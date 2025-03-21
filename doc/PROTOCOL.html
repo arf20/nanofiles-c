@@ -58,6 +58,15 @@ protocol: &lt;protocol id&gt;
 </ul>
 <pre><code>operation: pingok
 </code></pre>
+<h4 id="ping-bad-reply">Ping bad reply</h4>
+<p>Warns the client its using the wrong protocol</p>
+<ul>
+<li>Operation <code>pingbad</code></li>
+<li>Fields: None</li>
+<li>Answer to ‘ping request’</li>
+</ul>
+<pre><code>operation: pingbad
+</code></pre>
 <h4 id="filelist-reply">Filelist reply</h4>
 <p>Send back list of known (filename, hash, size and peers) for every
 file known</p>

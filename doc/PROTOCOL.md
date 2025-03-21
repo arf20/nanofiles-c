@@ -76,6 +76,20 @@ operation: pingok
 
 ```
 
+#### Ping bad reply
+
+Warns the client its using the wrong protocol
+
+ - Operation `pingbad`
+ - Fields: None
+ - Answer to 'ping request'
+
+```
+operation: pingbad
+
+```
+
+
 #### Filelist reply
 
 Send back list of known (filename, hash, size and peers) for every file known
