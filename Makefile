@@ -49,8 +49,8 @@ clean:
 doc: doc/PROTOCOL.html doc/PROTOCOL.pdf
 
 doc/PROTOCOL.html: doc/PROTOCOL.md
-	pandoc $? -o $@
+	pandoc --resource-path doc/ $? -o $@
        
 doc/PROTOCOL.pdf: doc/PROTOCOL.md
-	pandoc $? -o $@
+	pandoc --resource-path doc/ $? -o $@
 

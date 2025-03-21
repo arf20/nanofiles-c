@@ -247,19 +247,19 @@ Data chunk of file
 
 #### Client automaton
 
-![](doc/img/directory_client.jpg)
+![](img/directory_client.jpg)
 
 #### Server automaton
 
-![](doc/img/directory_server.jpg)
+![](img/directory_server.jpg)
 
 ### Peer protocol
 
 #### Client automaton
 
-![](doc/img/peer_client.jpg)
+![](img/peer_client.jpg)
 
 #### Server automaton
 
-![](doc/img/peer_server.jpg)
+![](img/peer_server.jpg)
 
