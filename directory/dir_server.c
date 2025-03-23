@@ -86,7 +86,11 @@ ds_respond(dir_server_t *ds, const char *recv_datagram,
                 (struct sockaddr*)client_sa, sizeof(struct sockaddr_in6)) < 0,
             "sendto", strerror(errno), return
         );
-    }
+
+        return;
+    } 
+
+    
 }
 
 void
