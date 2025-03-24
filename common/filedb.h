@@ -15,6 +15,8 @@ typedef struct {
 } filedb_t;
 
 filedb_t *filedb_new();
+void filedb_insert(filedb_t *db, const char *filename, const char *hash,
+    size_t size);
 int filedb_scan(filedb_t *db, const char *dirpath);
 
 #endif /* _FILEDB_H */

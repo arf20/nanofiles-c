@@ -63,3 +63,153 @@ dm_publishack()
     return buff;
 }
 
+/* deserialization */
+
+const char*
+strip(const char *s) {
+    while (*s == ' ' || *s == '\t')
+        s++;
+    return s;
+}
+
+const char*
+get_value(const char *key, const char *datagram)
+{
+    static char buff[256];
+
+    while (datagram && *datagram) {
+        datagram = strip(datagram);
+        const char *keyend = strpbrk(datagram, ":\n");
+
+        if (strncmp(datagram, key, keyend - datagram) != 0)
+            continue;
+
+        if (*keyend == ':') {
+            datagram = strip(keyend + 1);
+            const char *valueend = strchr(datagram, '\n');
+            strncpy(buff, datagram, valueend - datagram);
+            return buff;
+        } else {
+            buff[0] = '\0';
+            return buff;
+        }
+    }
+
+    return NULL;
+}
+
+dir_message_t*
+dm_deserialize(const char *datagram)
+{
+    const char *opstr = NULL;
+
+    NF_TRY_C(
+        !(opstr = get_value("operation", datagram)),
+        "get_value", "Key not found", "operation", return NULL
+    );
+
+    dir_message_t *dm = malloc(sizeof(dir_message_t));
+    dm->data = NULL;
+    dm->size = 0;
+
+    if (strcmp(opstr, "ping") == 0)
+        dm->operation = OPER_PING;
+    else if (strcmp(opstr, "filelist") == 0)
+        dm->operation = OPER_FILELIST;
+    else if (strcmp(opstr, "publish") == 0)
+        dm->operation = OOPER_PUBLISH;
+    else if (strcmp(opstr, "pingok") == 0)
+        dm->operation = OOPER_PINGOK;
+    else if (strcmp(opstr, "filelistres") == 0)
+        dm->operation = OOPER_FILELISTRES;
+    else if (strcmp(opstr, "publishack") == 0)
+        dm->operation = OOPER_PUBLISHACK;
+    else {
+        NF_TRY(
+            1, "get_value", "Opereration invalid", return NULL
+        );
+    }
+
+    return dm;
+}
+
+/* only messages with fields */
+
+void
+dm_deserialize_ping(dir_message_t *dm, const char *datagram)
+{
+    const char *protocolid = NULL:
+
+    NF_TRY_C(
+        !(protocolid = get_key("protocol", datagram)),
+        "get_key", "Key not found", "protocol", return
+    );
+
+    dm->data = malloc(sizeof(dir_message_ping_t));
+    dm->size = sizeof(dir_message_ping_t);
+    ((dir_message_ping_t*)dm->data)->protocolid = strdup(protocolid);
+}
+
+void
+dm_deserialize_publish(dir_message_t *dm, const char *datagram)
+{
+    dm->data = malloc(sizeof(dir_message_publish_t));
+    dm->size = sizeof(dir_message_publish_t);
+    dir_message_publish_t *dmp = (dir_message_publish_t*)dm->data;
+    dmp->file_list = filedb_new();
+
+    const char *ptr = strchr(datagram, '\n') + 1; /* skip first line */
+    const char *tokend = NULL;
+
+    NF_TRY_C(
+        !ptr,
+        "strchr", "protocol deserialize error", "expected trailing line feed",
+        return
+    );
+
+    int i = 0;
+    while (*ptr) {
+        ptr++;
+        tokend = strchr(ptr, ':');
+
+        NF_TRY_C(
+            !tokend,
+            "strchr", "protocol deserialize error", "expected `:`",
+            return
+        );
+
+        const char *hash = strndup(ptr, tokend - ptr);
+        ptr = strip(tokend + 1);
+        tokend = strchr(ptr, ';');
+
+        NF_TRY_C(
+            !tokend,
+            "strchr", "protocol deserialize error", "expected `;`",
+            return
+        );
+
+        const char *name = strndup(ptr, tokend - ptr);
+        ptr = strip(tokend + 1);
+        tokend = strchr(ptr, '\n');
+
+        NF_TRY_C(
+            !tokend,
+            "strchr", "protocol deserialize error",
+            "expected trailing line feed",
+            return
+        );
+
+        size_t size = strtoll(ptr, NULL, 0);
+
+        filedb_insert(dmp->file_list, name, hash, size);
+        ptr = strchr(ptr, '\n');
+    }
+}
+
+void
+dm_deserialize_filelistres(dir_message_t *dm, const char *datagram)
+{
+    dm->data = malloc(sizeof(dir_message_filelistres_t));
+    dm->size = sizeof(dir_message_filelistres_t);
+}
+
