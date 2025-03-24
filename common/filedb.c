@@ -21,17 +21,42 @@ filedb_new()
     return db;
 }
 
-void
-filedb_insert(filedb_t *db, const char *filename, const char *hash, size_t size)
+file_info_t*
+filedb_insert(filedb_t *db, const char *name, const char *hash, size_t size)
 {
     if (db->size + 1 > db->capacity) {
-        db->vec = realloc(db->vec, db->capacity * 2);
+        db->capacity *= 2;
+        db->vec = realloc(db->vec, db->capacity);
     }
 
-    db->vec[db->size].filename = filename;
+    db->vec[db->size].name = name;
     db->vec[db->size].hash = hash;
     db->vec[db->size].size = size;
     db->size++;
+
+    return &db->vec[db->size - 1];
+}
+
+server_list_t*
+sl_new()
+{
+    server_list_t *sl = malloc(sizeof(server_list_t));
+    sl->size = 0;
+    sl->capacity = INITIAL_VECTOR_CAPACITY;
+    sl->vec = malloc(sizeof(char*) * sl->capacity);
+    return sl;
+}
+
+void
+sl_insert(server_list_t *sl, const char *hostname)
+{
+    if (sl->size + 1 > sl->capacity) {
+        sl->capacity *= 2;
+        sl->vec = realloc(sl->vec, sl->capacity);
+    }
+
+    sl->vec[sl->size] = hostname;
+    sl->size++;
 }
 
 const char*

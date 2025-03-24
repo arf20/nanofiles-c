@@ -18,8 +18,6 @@ dc_new(const char *hostname)
 { 
     dc_t *dc = malloc(sizeof(dc_t));
     
-    dc->hostname = hostname;
-
     /* resolve address */
     dc->addr = resolve_name(hostname);
     if (dc->addr.sa_family == 0)
@@ -100,5 +98,11 @@ dc_ping_raw(dc_t *dc)
         return -1;
 
     return strncmp(res, "welcome", 6) == 0;
+}
+
+void
+dc_destroy(dc_t *dc)
+{
+    close(dc->sock);
 }
 

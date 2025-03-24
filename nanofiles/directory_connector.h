@@ -5,7 +5,6 @@
 
 typedef struct {
     int sock; 
-    const char *hostname;
     struct sockaddr addr;
 } dc_t;
 

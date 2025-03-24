@@ -4,6 +4,9 @@
 #define NF_DIRECTORY_PORT           6868
 #define NF_PROTOCOL_ID              "20032005"
 
+#define INITIAL_VECTOR_CAPACITY     64
+#define CMD_BUFF_SIZE               256
+
 #define MAX_DGRAM_SIZE              65507
 #define MAX_FORWARDINGS             5
 #define SOCK_TIMEOUT                1  /* seconds */

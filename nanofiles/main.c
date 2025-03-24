@@ -55,13 +55,22 @@ main(int argc, char **argv)
     printf("files:\t%-*s\tsize\tfilename\n", 40, "hash");
     for (int i = 0; i < db->size; i++) {
         printf("\t%s\t%ld\t%s\n", db->vec[i].hash, db->vec[i].size,
-            db->vec[i].filename);
+            db->vec[i].name);
     }
 
     ctl_t *ctl = ctl_new(directory_hostname);
 
-    if (test_mode_udp)
+    if (test_mode_udp) {
         ctl_test_directory(ctl);
+        return 0;
+    }
+
+    do {
+        ctl_process_command(ctl);
+    } while (!ctl->quit);
+
+    ctl_destroy(ctl);
+    free(cmd);
 
     return 0;
 }

@@ -1,8 +1,10 @@
 #include "dir_message.h"
 
 #include "config.h"
+#include "util.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static char buff[MAX_DGRAM_SIZE];
@@ -33,7 +35,7 @@ dm_publish(filedb_t *db)
     for (int i = 0; i < db->size; i++) {
         len += snprintf(buff + len, MAX_DGRAM_SIZE - len,
             "%s: %ld: %s\n",
-            db->vec[i].hash, db->vec[i].size, db->vec[i].filename);
+            db->vec[i].hash, db->vec[i].size, db->vec[i].name);
     }
      
     return buff;
@@ -49,10 +51,32 @@ dm_pingok()
 }
 
 const char*
+dm_pingbad()
+{
+    snprintf(buff, MAX_DGRAM_SIZE, "operation: pingbad\n");
+    return buff;
+}
+
+const char*
 dm_filelistres(filedb_t *db)
 {
-    snprintf(buff, MAX_DGRAM_SIZE, "operation: filelistres\n");
-    /* TODO */
+    size_t off =
+        snprintf(buff, MAX_DGRAM_SIZE, "operation: filelistres\n");
+    
+    for (size_t i = 0; i < db->size; i++) {
+        off += snprintf(buff + off, MAX_DGRAM_SIZE - off,
+            "%s: %s; %ld; ", db->vec[i].hash, db->vec[i].name, db->vec[i].size);
+
+        for (size_t j = 0; j < db->vec[i].serverlist->size; j++) {
+            off += snprintf(buff + off, MAX_DGRAM_SIZE - off,
+                "%s", db->vec[i].serverlist->vec[j]);
+
+            if (j != db->vec[i].serverlist->size - 1)
+                off += snprintf(buff + off, MAX_DGRAM_SIZE - off, "; ");
+        }
+        off += snprintf(buff + off, MAX_DGRAM_SIZE - off, "\n");
+    }
+
     return buff;
 }
 
@@ -117,13 +141,13 @@ dm_deserialize(const char *datagram)
     else if (strcmp(opstr, "filelist") == 0)
         dm->operation = OPER_FILELIST;
     else if (strcmp(opstr, "publish") == 0)
-        dm->operation = OOPER_PUBLISH;
+        dm->operation = OPER_PUBLISH;
     else if (strcmp(opstr, "pingok") == 0)
-        dm->operation = OOPER_PINGOK;
+        dm->operation = OPER_PINGOK;
     else if (strcmp(opstr, "filelistres") == 0)
-        dm->operation = OOPER_FILELISTRES;
+        dm->operation = OPER_FILELISTRES;
     else if (strcmp(opstr, "publishack") == 0)
-        dm->operation = OOPER_PUBLISHACK;
+        dm->operation = OPER_PUBLISHACK;
     else {
         NF_TRY(
             1, "get_value", "Opereration invalid", return NULL
@@ -138,11 +162,11 @@ dm_deserialize(const char *datagram)
 void
 dm_deserialize_ping(dir_message_t *dm, const char *datagram)
 {
-    const char *protocolid = NULL:
+    const char *protocolid = NULL;
 
     NF_TRY_C(
-        !(protocolid = get_key("protocol", datagram)),
-        "get_key", "Key not found", "protocol", return
+        !(protocolid = get_value("protocol", datagram)),
+        "get_value", "Key not found", "protocol", return
     );
 
     dm->data = malloc(sizeof(dir_message_ping_t));
@@ -156,7 +180,7 @@ dm_deserialize_publish(dir_message_t *dm, const char *datagram)
     dm->data = malloc(sizeof(dir_message_publish_t));
     dm->size = sizeof(dir_message_publish_t);
     dir_message_publish_t *dmp = (dir_message_publish_t*)dm->data;
-    dmp->file_list = filedb_new();
+    dmp->filelist = filedb_new();
 
     const char *ptr = strchr(datagram, '\n') + 1; /* skip first line */
     const char *tokend = NULL;
@@ -167,7 +191,6 @@ dm_deserialize_publish(dir_message_t *dm, const char *datagram)
         return
     );
 
-    int i = 0;
     while (*ptr) {
         ptr++;
         tokend = strchr(ptr, ':');
@@ -201,7 +224,7 @@ dm_deserialize_publish(dir_message_t *dm, const char *datagram)
 
         size_t size = strtoll(ptr, NULL, 0);
 
-        filedb_insert(dmp->file_list, name, hash, size);
+        filedb_insert(dmp->filelist, name, hash, size);
         ptr = strchr(ptr, '\n');
     }
 }
@@ -209,7 +232,82 @@ dm_deserialize_publish(dir_message_t *dm, const char *datagram)
 void
 dm_deserialize_filelistres(dir_message_t *dm, const char *datagram)
 {
-    dm->data = malloc(sizeof(dir_message_filelistres_t));
-    dm->size = sizeof(dir_message_filelistres_t);
+    dm->data = malloc(sizeof(dir_message_publish_t));
+    dm->size = sizeof(dir_message_publish_t);
+    dir_message_publish_t *dmp = (dir_message_publish_t*)dm->data;
+    dmp->filelist = filedb_new();
+
+    const char *ptr = strchr(datagram, '\n') + 1; /* skip first line */
+    const char *tokend = NULL;
+
+    NF_TRY_C(
+        !ptr,
+        "strchr", "protocol deserialize error", "expected trailing line feed",
+        return
+    );
+
+    while (*ptr) {
+        ptr++;
+        tokend = strchr(ptr, ':');
+
+        NF_TRY_C(
+            !tokend,
+            "strchr", "protocol deserialize error", "expected `:`",
+            return
+        );
+
+        const char *hash = strndup(ptr, tokend - ptr);
+        ptr = strip(tokend + 1);
+        tokend = strchr(ptr, ';');
+
+        NF_TRY_C(
+            !tokend,
+            "strchr", "protocol deserialize error", "expected `;`",
+            return
+        );
+
+        const char *name = strndup(ptr, tokend - ptr);
+        ptr = strip(tokend + 1);
+        tokend = strchr(ptr, ';');
+
+        NF_TRY_C(
+            !tokend,
+            "strchr", "protocol deserialize error", "expected `;`",
+            return
+        );
+
+        size_t size = strtoll(ptr, NULL, 0);
+
+        ptr = strip(tokend + 1);
+
+        file_info_t *fi = filedb_insert(dmp->filelist, name, hash, size);
+
+        while (*ptr) {
+            tokend = strpbrk(ptr, ",\n");
+
+            NF_TRY_C(
+                !tokend,
+                "strpbrk", "protocol deserialize error",
+                "expected , or trailing line feed",
+                return
+            );
+
+            if (tokend - ptr) {
+                sl_insert(fi->serverlist, strndup(ptr, tokend - ptr));
+            } else {
+                NF_TRY_C(
+                    1,
+                    "strpbrk", "protocol deserialize warning",
+                    "zero-length hostname",
+                );
+            }
+
+            if (*tokend == '\n')
+                break;
+            ptr = strip(tokend + 1);
+        }
+
+        ptr = strchr(ptr, '\n');
+    }
 }
 

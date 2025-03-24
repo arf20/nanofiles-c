@@ -11,6 +11,7 @@ const char* dm_publish(filedb_t *db);
 
 /* direcory responses */
 const char* dm_pingok();
+const char* dm_pingbad();
 const char* dm_filelistres(filedb_t *db);
 const char* dm_publishack();
 
@@ -35,7 +36,7 @@ typedef struct {
 } dir_message_ping_t;
 
 typedef struct {
-    filedb_t *file_list;
+    filedb_t *filelist;
     unsigned short port;
 } dir_message_publish_t;
 

@@ -13,6 +13,7 @@ typedef struct {
 
 ctl_t* ctl_new(const char *directory_hostname);
 void ctl_test_directory(ctl_t *ctl);
+void ctl_destroy(ctl_t *ctl);
 
 #endif /* _NF_CONTROLLER_H */
 
