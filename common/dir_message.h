@@ -17,10 +17,12 @@ const char* dm_publishack();
 
 /* deserialize directory message */
 typedef enum {
+    OPER_INVALID,
     OPER_PING,
     OPER_FILELIST,
     OPER_PUBLISH,
     OPER_PINGOK,
+    OPER_PINGBAD,
     OPER_FILELISTRES,
     OPER_PUBLISHACK
 } operation_t;

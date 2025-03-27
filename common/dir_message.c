@@ -102,16 +102,24 @@ get_value(const char *key, const char *datagram)
     static char buff[256];
 
     while (datagram && *datagram) {
+        if (*datagram == '\n')
+            datagram++;
         datagram = strip(datagram);
         const char *keyend = strpbrk(datagram, ":\n");
 
-        if (strncmp(datagram, key, keyend - datagram) != 0)
+        if (strncmp(datagram, key, keyend - datagram) != 0) {
+            datagram = strchr(datagram, '\n');
             continue;
+        }
 
         if (*keyend == ':') {
             datagram = strip(keyend + 1);
             const char *valueend = strchr(datagram, '\n');
-            strncpy(buff, datagram, valueend - datagram);
+            if (!valueend)
+                valueend = datagram + strlen(datagram);
+            int len = MIN(valueend - datagram, 255);
+            strncpy(buff, datagram, len);
+            buff[len] = '\0';
             return buff;
         } else {
             buff[0] = '\0';
@@ -129,7 +137,7 @@ dm_deserialize(const char *datagram)
 
     NF_TRY_C(
         !(opstr = get_value("operation", datagram)),
-        "get_value", "Key not found", "operation", return NULL
+        "get_value", "key not found", "operation", return NULL
     );
 
     dir_message_t *dm = malloc(sizeof(dir_message_t));
@@ -144,13 +152,16 @@ dm_deserialize(const char *datagram)
         dm->operation = OPER_PUBLISH;
     else if (strcmp(opstr, "pingok") == 0)
         dm->operation = OPER_PINGOK;
+    else if (strcmp(opstr, "pingbad") == 0)
+        dm->operation = OPER_PINGBAD;
     else if (strcmp(opstr, "filelistres") == 0)
         dm->operation = OPER_FILELISTRES;
     else if (strcmp(opstr, "publishack") == 0)
         dm->operation = OPER_PUBLISHACK;
     else {
+        dm->operation = OPER_INVALID;
         NF_TRY(
-            1, "get_value", "Opereration invalid", return NULL
+            1, "get_value", "opereration invalid",
         );
     }
 
@@ -166,7 +177,7 @@ dm_deserialize_ping(dir_message_t *dm, const char *datagram)
 
     NF_TRY_C(
         !(protocolid = get_value("protocol", datagram)),
-        "get_value", "Key not found", "protocol", return
+        "get_value", "key not found", "protocol", return
     );
 
     dm->data = malloc(sizeof(dir_message_ping_t));

@@ -1,8 +1,12 @@
 #ifndef _NF_SHELL_H
 #define _NF_SHELL_H
 
+#include "directory_connector.h"
+
 typedef struct {
     char *cmdbuff;
+    dc_t *dc;
+    int quit;
 } shell_t;
 
 typedef enum {
@@ -19,13 +23,12 @@ typedef enum {
 
 typedef struct {
     cmd_t cmd;
-    char *arg;
+    const char *arg;
 } cmd_arg_t;
 
 shell_t* shell_new();
-cmd_arg_t* shell_read_command(shell_t *shell);
-void shell_process_command(cmd_arg_t *cmd);
-void shell_destroy(ctl_t *shell);
+cmd_arg_t shell_read_command(shell_t *shell);
+void shell_destroy(shell_t *shell);
 
 #endif /* _NF_SHELL_H */
 

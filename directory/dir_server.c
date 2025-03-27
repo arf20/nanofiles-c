@@ -65,7 +65,7 @@ ds_recv(dir_server_t *ds, struct sockaddr_in6 *client_sa)
         "recvfrom", strerror(errno), return NULL
     );
 
-    recv_buff[addrlen] = '\0';
+    recv_buff[recvbytes] = '\0';
 
     return recv_buff;
 }

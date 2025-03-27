@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <netinet/ip.h>
 
@@ -95,9 +96,11 @@ dc_ping_raw(dc_t *dc)
 
     const char *res = dc_request(dc, message_ping);
     if (!res)
-        return -1;
+        return 0;
 
-    return strncmp(res, "welcome", 6) == 0;
+    dir_message_t *dm = dm_deserialize(res);
+
+    return dm->operation == OPER_PINGOK;
 }
 
 void

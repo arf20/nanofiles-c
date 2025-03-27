@@ -70,7 +70,6 @@ main(int argc, char **argv)
     } while (!ctl->quit);
 
     ctl_destroy(ctl);
-    free(cmd);
 
     return 0;
 }

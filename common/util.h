@@ -3,6 +3,9 @@
 
 #include <stdio.h>
 
+#define MAX(a, b) ((a)>(b)?(a):(b))
+#define MIN(a, b) ((a)<(b)?(a):(b))
+
 #define NF_TRY_S(f, fname, a)  if ((f)) { \
     fprintf(stderr, "error: " __FILE__ ":%d: %s()\n", \
         __LINE__, (fname)); \
