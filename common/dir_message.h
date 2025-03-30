@@ -43,13 +43,14 @@ typedef struct {
 } dir_message_publish_t;
 
 typedef struct {
-    filedb_t *file_list;
+    filedb_t *db;
 } dir_message_filelistres_t;
 
 dir_message_t *dm_deserialize(const char *datagram);
 void dm_deserialize_ping(dir_message_t *dm, const char *datagram);
 void dm_deserialize_publish(dir_message_t *dm, const char *datagram);
 void dm_deserialize_filelistres(dir_message_t *dm, const char *datagram);
+void dm_destroy(dir_message_t *dm);
 
 #endif /* _DIR_MESSAGE_H */
 

@@ -34,8 +34,8 @@ dm_publish(filedb_t *db)
    
     for (int i = 0; i < db->size; i++) {
         len += snprintf(buff + len, MAX_DGRAM_SIZE - len,
-            "%s: %ld: %s\n",
-            db->vec[i].hash, db->vec[i].size, db->vec[i].name);
+            "%s: %s; %ld\n",
+            db->vec[i].hash, db->vec[i].name, db->vec[i].size);
     }
      
     return buff;
@@ -76,6 +76,7 @@ dm_filelistres(filedb_t *db)
         }
         off += snprintf(buff + off, MAX_DGRAM_SIZE - off, "\n");
     }
+
 
     return buff;
 }
@@ -193,7 +194,7 @@ dm_deserialize_publish(dir_message_t *dm, const char *datagram)
     dir_message_publish_t *dmp = (dir_message_publish_t*)dm->data;
     dmp->filelist = filedb_new();
 
-    const char *ptr = strchr(datagram, '\n') + 1; /* skip first line */
+    const char *ptr = strchr(datagram, '\n'); /* skip first line */
     const char *tokend = NULL;
 
     NF_TRY_C(
@@ -204,6 +205,8 @@ dm_deserialize_publish(dir_message_t *dm, const char *datagram)
 
     while (*ptr) {
         ptr++;
+        if (!*ptr)
+            return;
         tokend = strchr(ptr, ':');
 
         NF_TRY_C(
@@ -248,7 +251,7 @@ dm_deserialize_filelistres(dir_message_t *dm, const char *datagram)
     dir_message_publish_t *dmp = (dir_message_publish_t*)dm->data;
     dmp->filelist = filedb_new();
 
-    const char *ptr = strchr(datagram, '\n') + 1; /* skip first line */
+    const char *ptr = strchr(datagram, '\n'); /* skip first line */
     const char *tokend = NULL;
 
     NF_TRY_C(
@@ -259,6 +262,8 @@ dm_deserialize_filelistres(dir_message_t *dm, const char *datagram)
 
     while (*ptr) {
         ptr++;
+        if (!*ptr)
+            return;
         tokend = strchr(ptr, ':');
 
         NF_TRY_C(
@@ -292,6 +297,7 @@ dm_deserialize_filelistres(dir_message_t *dm, const char *datagram)
         ptr = strip(tokend + 1);
 
         file_info_t *fi = filedb_insert(dmp->filelist, name, hash, size);
+        fi->serverlist = sl_new();
 
         while (*ptr) {
             tokend = strpbrk(ptr, ",\n");
@@ -320,5 +326,11 @@ dm_deserialize_filelistres(dir_message_t *dm, const char *datagram)
 
         ptr = strchr(ptr, '\n');
     }
+}
+
+void
+dm_destroy(dir_message_t *dm)
+{
+    free(dm);
 }
 

@@ -95,7 +95,7 @@ ds_respond_ping(dir_server_t *ds, const dir_message_ping_t *dmping,
 void
 ds_respond_filelist(dir_server_t *ds, const struct sockaddr_in6 *client_sa)
 {
-    printf("filelist[%ld]\n", ds->db->size);
+    printf("filelistres[%ld]\n", ds->db->size);
     const char *send_datagram = dm_filelistres(ds->db);
 
     NF_TRY(
@@ -119,6 +119,26 @@ ds_respond_publish(dir_server_t *ds, const dir_message_publish_t *dmpublish,
             (struct sockaddr*)client_sa, sizeof(struct sockaddr_in6)) < 0,
         "sendto", strerror(errno), return
     );
+}
+
+void
+ds_register_peer(filedb_t *serverdb, const filedb_t *registerlist,
+    const char *client_hostname)
+{
+    for (int i = 0; i < registerlist->size; i++) {
+        int idx = filedb_find(serverdb, registerlist->vec[i].hash);
+        if (idx > 0) {
+            /* already in db, add peer */
+            sl_insert(serverdb->vec[idx].serverlist, client_hostname);
+        } else {
+            /* otherwise, insert new file */
+            file_info_t *fi = filedb_insert(serverdb, registerlist->vec[i].name,
+                registerlist->vec[i].hash, registerlist->vec[i].size);
+            fi->serverlist = sl_new();
+            /* and add peer */
+            sl_insert(fi->serverlist, client_hostname);
+        }
+    }
 }
 
 void
@@ -155,11 +175,19 @@ ds_respond(dir_server_t *ds, const char *recv_datagram,
             ds_respond_filelist(ds, client_sa);
         } break;
         case OPER_PUBLISH: {
+            /* deserialize */
             dm_deserialize_publish(dm, recv_datagram);
             dir_message_publish_t *dmpublish =
                 (dir_message_publish_t*)dm->data;
             printf("publish[%ld] -> ", dmpublish->filelist->size);
+            /* respond */
             ds_respond_publish(ds, dmpublish, client_sa);
+            /* register peer */
+            ds_register_peer(ds->db, dmpublish->filelist, strdup(addr_str_buff));
+            /* cleanup */
+            free(dmpublish->filelist);
+            free(dmpublish);
+            dm_destroy(dm);
         } break;
         default: break;
     }

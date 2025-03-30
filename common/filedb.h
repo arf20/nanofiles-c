@@ -2,6 +2,7 @@
 #define _FILEDB_H
 
 #include <stddef.h>
+#include <stdio.h>
 
 typedef struct {
     const char **vec;
@@ -26,6 +27,9 @@ file_info_t* filedb_insert(filedb_t *db, const char *filename, const char *hash,
 server_list_t* sl_new();
 void sl_insert(server_list_t *sl, const char *hostname);
 int filedb_scan(filedb_t *db, const char *dirpath);
+int filedb_find(const filedb_t *db, const char *hash);
+void filedb_print(const filedb_t *db, FILE *f);
+void filedb_destroy(filedb_t *db);
 
 #endif /* _FILEDB_H */
 

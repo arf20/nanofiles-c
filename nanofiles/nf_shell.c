@@ -46,8 +46,8 @@ shell_read_command(shell_t *shell)
         return (cmd_arg_t){ CMD_LISTREMOTE, NULL };
     } else if (strcmp(cmd, "listlocal") == 0) {
         return (cmd_arg_t){ CMD_LISTLOCAL, NULL };
-    } else if ((strcmp(cmd, "serve") == 0) && arg) { /* very stupid */
-        return (cmd_arg_t){ CMD_SERVE, arg };
+    } else if (strcmp(cmd, "serve") == 0) {
+        return (cmd_arg_t){ CMD_SERVE, NULL };
     } else if (strcmp(cmd, "ping") == 0) {
         return (cmd_arg_t){ CMD_PING, arg };
     } else if ((strcmp(cmd, "download") == 0) && arg) {

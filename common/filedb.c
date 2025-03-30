@@ -131,3 +131,38 @@ filedb_scan(filedb_t *db, const char *dirpath)
     return 0;
 }
 
+int
+filedb_find(const filedb_t *db, const char *hash)
+{
+    for (int i = 0; i < db->size; i++) {
+        if (strcmp(db->vec[i].hash, hash) == 0)
+            return i;
+    }
+    return -1;
+}
+
+void
+filedb_print(const filedb_t *db, FILE *f)
+{
+    fprintf(f, "files:\t%-*s\tsize\tfilename\n", 40, "hash");
+    for (int i = 0; i < db->size; i++) {
+        printf("\t%s\t%ld\t%s\n", db->vec[i].hash, db->vec[i].size,
+            db->vec[i].name);
+    }
+}
+
+void
+filedb_destroy(filedb_t *db)
+{
+    for (int i = 0; i < db->size; i++) {
+        free((char*)db->vec[i].hash);
+        free((char*)db->vec[i].name);
+        if (db->vec[i].serverlist) {
+            for (int j = 0; j < db->vec[i].serverlist->size; j++)
+                free((char*)db->vec[i].serverlist->vec[j]);
+            free(db->vec[i].serverlist);
+        }
+    }
+    free(db->vec);
+}
+

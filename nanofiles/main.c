@@ -52,13 +52,7 @@ main(int argc, char **argv)
     if (filedb_scan(db, shared_dir) < 0)
         return 1;
 
-    printf("files:\t%-*s\tsize\tfilename\n", 40, "hash");
-    for (int i = 0; i < db->size; i++) {
-        printf("\t%s\t%ld\t%s\n", db->vec[i].hash, db->vec[i].size,
-            db->vec[i].name);
-    }
-
-    ctl_t *ctl = ctl_new(directory_hostname);
+    ctl_t *ctl = ctl_new(db, directory_hostname);
 
     if (test_mode_udp) {
         ctl_test_directory(ctl);
