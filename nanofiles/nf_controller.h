@@ -3,7 +3,7 @@
 
 #include "../common/filedb.h"
 
-#include "directory_connector.h"
+#include "nf_ctl_logic_dir.h"
 #include "nf_shell.h"
 
 typedef enum { OFFLINE, ONLINE } status_t;
@@ -11,7 +11,7 @@ typedef enum { OFFLINE, ONLINE } status_t;
 typedef struct {
     const char *directory_hostname;
     status_t state;
-    dc_t *dc;
+    logicdir_t *ld;
     filedb_t *db;
     shell_t *shell;
     int quit;
