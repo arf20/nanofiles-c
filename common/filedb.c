@@ -170,5 +170,6 @@ filedb_destroy(filedb_t *db)
         }
     }
     free(db->vec);
+    free(db);
 }
 

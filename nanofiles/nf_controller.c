@@ -10,6 +10,7 @@ ctl_new(filedb_t *db, const char *directory_hostname)
 
     ctl->state = OFFLINE;
     ctl->ld = logicdir_new(directory_hostname);
+    ctl->lp = logicp2p_new();
     ctl->shell = shell_new();
     ctl->db = db;
     ctl->quit = 0;
@@ -25,7 +26,7 @@ ctl_test_directory(ctl_t *ctl)
 }
 
 void
-ctl_process_command(ctl_t *ctl)
+ctl_process_command(ctl_t *ctl, int test_mode_tcp)
 {
     cmd_arg_t cmd = shell_read_command(ctl->shell);
 
@@ -52,7 +53,11 @@ ctl_process_command(ctl_t *ctl)
         case CMD_SERVE: {
             logicdir_register_server(ctl->ld, ctl->db); 
 
-            /* TODO: peer server */
+            if (test_mode_tcp) {
+                logicp2p_test_server();
+            } else {
+                logicp2p_start_server();
+            }
         } break;
         case CMD_PING: {
             ctl->state = logicdir_ping(ctl->ld) ? ONLINE : OFFLINE;
@@ -70,5 +75,6 @@ void
 ctl_destroy(ctl_t *ctl)
 {
     shell_destroy(ctl->shell);
+    free(ctl);
 }
 

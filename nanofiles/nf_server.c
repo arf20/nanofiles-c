@@ -63,19 +63,18 @@ nfs_test(nfs_t *nfs)
     NF_TRY(
         (recv_bytes = recv(nfs->sock, test_recv_buff, 256, 0)) < 0,
         "recv", strerror(errno), return 0
-    )
+    );
 
     NF_TRY(
         send(nfs->sock, test_recv_buff, recv_bytes, 0) < 0,
         "send", strerror(errno), return 0
-    )
-
-    return *(int*)test_recv_buff == test_int;
+    );
 }
 
 void
 nfs_destroy(nfs_t *nfs)
 {
     close(nfs->sock);
+    free(nfs);
 }
 

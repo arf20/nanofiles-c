@@ -60,7 +60,7 @@ main(int argc, char **argv)
     }
 
     do {
-        ctl_process_command(ctl);
+        ctl_process_command(ctl, test_mode_tcp);
     } while (!ctl->quit);
 
     ctl_destroy(ctl);

@@ -4,6 +4,7 @@
 #include "../common/filedb.h"
 
 #include "nf_ctl_logic_dir.h"
+#include "nf_ctl_logic_p2p.h"
 #include "nf_shell.h"
 
 typedef enum { OFFLINE, ONLINE } status_t;
@@ -12,6 +13,7 @@ typedef struct {
     const char *directory_hostname;
     status_t state;
     logicdir_t *ld;
+    logicp2p_t *lp;
     filedb_t *db;
     shell_t *shell;
     int quit;

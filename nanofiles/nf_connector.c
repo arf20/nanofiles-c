@@ -64,5 +64,6 @@ void
 nfc_destroy(nfc_t *nfc)
 {
     close(nfc->sock);
+    free(nfc);
 }
 
