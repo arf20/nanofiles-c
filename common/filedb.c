@@ -144,10 +144,16 @@ filedb_find(const filedb_t *db, const char *hash)
 void
 filedb_print(const filedb_t *db, FILE *f)
 {
-    fprintf(f, "files:\t%-*s\tsize\tfilename\n", 40, "hash");
+    fprintf(f, "files:\t%-*s\tsize\tfilename\tservers\n", 40, "hash");
     for (int i = 0; i < db->size; i++) {
-        printf("\t%s\t%ld\t%s\n", db->vec[i].hash, db->vec[i].size,
+        printf("\t%s\t%ld\t%s", db->vec[i].hash, db->vec[i].size,
             db->vec[i].name);
+        if (db->vec[i].serverlist) {
+            printf("\t");
+            for (int j = 0; j < db->vec[i].serverlist->size; j++)
+                printf(" %s", db->vec[i].serverlist->vec[j]);
+        }
+        printf("\n");
     }
 }
 

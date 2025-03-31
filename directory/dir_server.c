@@ -42,8 +42,8 @@ ds_new(float corruption_prob)
     };
 
     NF_TRY(
-        bind(ds->sock, (struct sockaddr*)&listen_sa, sizeof(struct sockaddr_in6))
-            < 0,
+        bind(ds->sock, (struct sockaddr*)&listen_sa,
+            sizeof(struct sockaddr_in6)) < 0,
         "bind", strerror(errno), return NULL
     );
 
