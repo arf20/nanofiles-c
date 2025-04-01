@@ -1,5 +1,5 @@
-#ifndef _NF_CTL_LOGIC_DIR_H
-#define _NF_CTL_LOGIC_DIR_H
+#ifndef _NF_CTL_LOGIC_P2P_H
+#define _NF_CTL_LOGIC_P2P_H
 
 #include "../common/filedb.h"
 #include "directory_connector.h"
@@ -16,5 +16,5 @@ int logicdir_fetch_print_files(logicdir_t *ld);
 int logicdir_register_server(logicdir_t *ld, filedb_t *db);
 void logicdir_destroy(logicdir_t *ld);
 
-#endif /* _NF_CTL_LOGIC_DIR_H */
+#endif /* _NF_CTL_LOGIC_P2P_H */
 

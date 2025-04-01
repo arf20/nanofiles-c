@@ -31,6 +31,7 @@ ctl_process_command(ctl_t *ctl, int test_mode_tcp)
     cmd_arg_t cmd = shell_read_command(ctl->shell);
 
     switch (cmd.cmd) {
+        case CMD_INVALID: return; break;
         case CMD_HELP: {
             printf(
                 "\thelp\t\tshow this message\n"
@@ -54,9 +55,9 @@ ctl_process_command(ctl_t *ctl, int test_mode_tcp)
             logicdir_register_server(ctl->ld, ctl->db); 
 
             if (test_mode_tcp) {
-                logicp2p_test_server();
+                logicp2p_test_server(ctl->lp);
             } else {
-                logicp2p_start_server();
+                logicp2p_start_server(ctl->lp);
             }
         } break;
         case CMD_PING: {

@@ -18,20 +18,6 @@ nfs_new(unsigned short port)
 { 
     nfs_t *nfs = malloc(sizeof(nfs_t));
     
-    /* create socket */
-    NF_TRY(
-        (nfs->sock = socket(nfs->addr.sa_family, SOCK_STREAM, IPPROTO_TCP)) == 0,
-        "socket", strerror(errno), return NULL
-    );
-
-    /* default on linux, not on BSD */
-    int no = 0;
-    NF_TRY(
-        setsockopt(ds->sock, IPPROTO_IPV6, IPV6_V6ONLY,
-            (void*)&no, sizeof(int)) < 0,
-        "setsockopt", strerror(errno), return NULL
-    );
-
     struct sockaddr_in6 listen_sa = {
         .sin6_family = AF_INET6,
         .sin6_port = htons(NF_P2P_PORT),
@@ -40,14 +26,29 @@ nfs_new(unsigned short port)
         .sin6_scope_id = 0
     };
 
+    /* create socket */
     NF_TRY(
-        bind(ds->sock, (struct sockaddr*)&listen_sa,
+        (nfs->accept_sock = socket(listen_sa.sin6_family,
+            SOCK_STREAM, IPPROTO_TCP)) == 0,
+        "socket", strerror(errno), return NULL
+    );
+
+    /* default on linux, not on BSD */
+    int no = 0;
+    NF_TRY(
+        setsockopt(nfs->accept_sock, IPPROTO_IPV6, IPV6_V6ONLY,
+            (void*)&no, sizeof(int)) < 0,
+        "setsockopt", strerror(errno), return NULL
+    );
+
+    NF_TRY(
+        bind(nfs->accept_sock, (struct sockaddr*)&listen_sa,
             sizeof(struct sockaddr_in6)) < 0,
         "bind", strerror(errno), return NULL
     );
 
     NF_TRY(
-        listen(ds->sock, SOMAXCONN) < 0,
+        listen(nfs->accept_sock, SOMAXCONN) < 0,
         "listen", strerror(errno), return NULL
     );
 
@@ -57,24 +58,75 @@ nfs_new(unsigned short port)
 int
 nfs_test(nfs_t *nfs)
 {
-    /* test: recv and resend */
+    /* test: accept, recv and resend */
+    int client_sock = 0;
+    struct sockaddr_in6 client_addr;
+    socklen_t addrlen;
+
+    NF_TRY(
+        (client_sock = accept(nfs->accept_sock,
+                (struct sockaddr*)&client_addr, &addrlen)) < 0,
+        "accept", strerror(errno), return 0
+    );
+
     static char test_recv_buff[256];
     size_t recv_bytes;
     NF_TRY(
-        (recv_bytes = recv(nfs->sock, test_recv_buff, 256, 0)) < 0,
+        (recv_bytes = recv(client_sock, test_recv_buff, 256, 0)) < 0,
         "recv", strerror(errno), return 0
     );
 
     NF_TRY(
-        send(nfs->sock, test_recv_buff, recv_bytes, 0) < 0,
+        send(client_sock, test_recv_buff, recv_bytes, 0) < 0,
         "send", strerror(errno), return 0
     );
+
+    NF_TRY(
+        close(client_sock) < 0,
+        "close", strerror(errno), return 0
+    );
+
+    return 1;
+}
+
+nf_client_t*
+nfs_accept(nfs_t *nfs)
+{
+    int client_sock = 0;
+    struct sockaddr_in6 client_addr;
+    socklen_t addrlen;
+
+    NF_TRY(
+        (client_sock = accept(nfs->accept_sock,
+                (struct sockaddr*)&client_addr, &addrlen)) < 0,
+        "accept", strerror(errno), return NULL
+    );
+
+    return nf_client_new(client_sock, client_addr);
 }
 
 void
 nfs_destroy(nfs_t *nfs)
 {
-    close(nfs->sock);
+    NF_TRY(
+        close(nfs->accept_sock) < 0,
+        "close", strerror(errno),
+    );
     free(nfs);
+}
+
+nf_client_t*
+nf_client_new(int sock, struct sockaddr_in6 addr)
+{
+    nf_client_t *client = malloc(sizeof(nf_client_t));
+    client->sock = sock;
+    client->addr = addr;
+    return client;
+}
+
+void
+nf_client_destroy(nf_client_t *client)
+{
+    free(client);
 }
 
