@@ -15,23 +15,19 @@ shell_new()
     return shell;
 }
 
-
-
-
 cmd_arg_t
 shell_read_command(shell_t *shell)
 {
     static size_t cmdsize = CMD_BUFF_SIZE;
     printf("nanofiles> ");
     getline(&shell->cmdbuff, &cmdsize, stdin);
+    shell->cmdbuff[strlen(shell->cmdbuff) - 1] = '\0'; /* strip trailing \n */
 
-    if (strlen(shell->cmdbuff) == 1)
+    if (strlen(shell->cmdbuff) == 0)
         return (cmd_arg_t){ CMD_INVALID, NULL };
   
     char *cmd = strtok(shell->cmdbuff, " ");
     const char *arg = strtok(NULL, " ");
-
-    cmd[strlen(cmd) - 1] = '\0'; /* strpip trailing \n */
 
     if (!cmd) {
         printf("invalid command\n");

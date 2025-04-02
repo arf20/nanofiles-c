@@ -64,7 +64,7 @@ ctl_process_command(ctl_t *ctl, int test_mode_tcp)
             ctl->state = logicdir_ping(ctl->ld) ? ONLINE : OFFLINE;
         } break;
         case CMD_DOWNLOAD: {
-
+            
         } break;
         case CMD_UPLOAD: {
 
