@@ -1,10 +1,13 @@
 #include "nf_ctl_logic_p2p.h"
 
 #include "../common/config.h"
+#include "../common/util.h"
 #include "nf_connector.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 #include <arpa/inet.h>
 #include <pthread.h>
@@ -37,12 +40,48 @@ logicp2p_test_client(logicp2p_t *lp, const char *hostname)
 }
 
 int
+logicp2p_download(const logicp2p_t *lp, const file_info_t *fi)
+{
+    /* open output file */
+    FILE *output = fopen(fi->name, "wb");
+    NF_TRY(!output, "fopen", strerror(errno), return 0);
+    /* connect to all serverlist */
+    nfc_t **connections = malloc(sizeof(nfc_t*) * fi->serverlist->size);
+    int peers_reached = 0;
+    for (int i = 0; i < fi->serverlist->size; i++) {
+        printf("connecting to %s... ", fi->serverlist->vec[i]);
+        connections[i] = nfc_new(fi->serverlist->vec[i]);
+        if (connections[i]) {
+            printf("ok\n");
+            peers_reached++;
+        } else
+            printf("failed - ignored\n");
+    }
+    if (peers_reached == 0) {
+        printf("no peers could be reached for file %s - stopped\n", fi->name);
+        return 0;
+    } else
+        printf("downloading from %d peers...\n", peers_reached);
+   
+
+
+
+
+    /* disconnect clients */
+    for (int i = 0; i < fi->serverlist->size; i++)
+        if (connections[i])
+            nfc_destroy(connections[i]);
+
+    return 1;
+}
+
+int
 logicp2p_test_server(logicp2p_t *lp)
 {
     printf("testing server... ");
     fflush(stdout);
 
-    lp->nfs = nfs_new(NF_P2P_PORT);
+    lp->nfs = nfs_new(NF_DEFAULT_P2P_PORT);
     int res = nfs_test(lp->nfs);
     printf(res ? "ok\n" : "failed\n");
     nfs_destroy(lp->nfs);
@@ -88,7 +127,7 @@ accept_loop(void *arg)
 void
 logicp2p_start_server(logicp2p_t *lp)
 {
-    lp->nfs = nfs_new(NF_P2P_PORT);
+    lp->nfs = nfs_new(NF_DEFAULT_P2P_PORT);
 
     printf("started accept thread\n");
     pthread_t accept_thread;

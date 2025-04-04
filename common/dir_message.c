@@ -15,7 +15,7 @@ const char*
 dm_ping(const char *protoid)
 {
     snprintf(buff, MAX_DGRAM_SIZE, "operation: ping\nprotocol: %s\n",
-        NF_PROTOCOL_ID);
+        NF_DIR_PROTOCOL_ID);
     return buff;
 }
 
@@ -27,7 +27,7 @@ dm_filelist()
 }
 
 const char*
-dm_publish(filedb_t *db)
+dm_publish(const filedb_t *db)
 {
     int len = 0;
     len += snprintf(buff, MAX_DGRAM_SIZE, "operation: publish\n");
@@ -58,7 +58,7 @@ dm_pingbad()
 }
 
 const char*
-dm_filelistres(filedb_t *db)
+dm_filelistres(const filedb_t *db)
 {
     size_t off =
         snprintf(buff, MAX_DGRAM_SIZE, "operation: filelistres\n");

@@ -92,7 +92,7 @@ dc_test(dc_t *dc)
 int
 dc_ping_raw(dc_t *dc)
 {
-    const char *message_ping = dm_ping(NF_PROTOCOL_ID);
+    const char *message_ping = dm_ping(NF_DIR_PROTOCOL_ID);
 
     const char *res = dc_request(dc, message_ping);
     if (!res)

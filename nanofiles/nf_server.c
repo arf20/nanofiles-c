@@ -20,7 +20,7 @@ nfs_new(unsigned short port)
     
     struct sockaddr_in6 listen_sa = {
         .sin6_family = AF_INET6,
-        .sin6_port = htons(NF_P2P_PORT),
+        .sin6_port = htons(port),
         .sin6_addr = IN6ADDR_ANY_INIT,
         .sin6_flowinfo = 0,
         .sin6_scope_id = 0

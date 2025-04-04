@@ -75,8 +75,8 @@ ds_respond_ping(dir_server_t *ds, const dir_message_ping_t *dmping,
     const struct sockaddr_in6 *client_sa)
 {
     const char *send_datagram = NULL;
-    if (strncmp(dmping->protocolid, NF_PROTOCOL_ID, sizeof(NF_PROTOCOL_ID))
-        == 0)
+    if (strncmp(dmping->protocolid, NF_DIR_PROTOCOL_ID,
+        sizeof(NF_DIR_PROTOCOL_ID)) == 0)
     {
         send_datagram = dm_pingok();
         printf("pingok\n");

@@ -37,6 +37,24 @@ filedb_insert(filedb_t *db, const char *name, const char *hash, size_t size)
     return &db->vec[db->size - 1];
 }
 
+file_info_t*
+filedb_find_name(filedb_t *db, const char *name)
+{
+    for (int i = 0; i < db->size; i++)
+        if (strcmp(db->vec[i].name, name) == 0)
+            return &db->vec[i];
+    return NULL;
+}
+
+file_info_t*
+filedb_find_hash(filedb_t *db, const char *hash)
+{
+    for (int i = 0; i < db->size; i++)
+        if (strcmp(db->vec[i].hash, hash) == 0)
+            return &db->vec[i];
+    return NULL;
+}
+
 server_list_t*
 sl_new()
 {

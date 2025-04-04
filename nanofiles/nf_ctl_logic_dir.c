@@ -18,7 +18,7 @@ logicdir_new(const char *directory_hostname)
 }
 
 int
-logicdir_test(logicdir_t *ld)
+logicdir_test(const logicdir_t *ld)
 {
     printf("testing connection to directory... ");
     fflush(stdout);
@@ -34,7 +34,7 @@ logicdir_test(logicdir_t *ld)
 }
 
 int
-logicdir_register_server(logicdir_t *ld, filedb_t *db)
+logicdir_register_server(const logicdir_t *ld, const filedb_t *db)
 {
     /* register server */
     printf("registering... ");
@@ -54,31 +54,33 @@ logicdir_register_server(logicdir_t *ld, filedb_t *db)
     }
 }
 
-int
-logicdir_fetch_print_files(logicdir_t *ld)
+filedb_t*
+logicdir_fetch(const logicdir_t *ld)
 {
     /* generate request */
     const char *request = dm_filelist();
     /* perform request */
     const char *response = dc_request(ld->dc, request);
     if (!response)
-        return 0;
+        return NULL;
     /* deserialize response */
     dir_message_t *dm = dm_deserialize(response);
     if (!dm)
-        return 0;
+        return NULL;
     dm_deserialize_filelistres(dm, response);
     dir_message_filelistres_t *dmf = 
         (dir_message_filelistres_t*)dm->data;
-    /* print results */
-    filedb_print(dmf->db, stdout);
-    /* clean up */
-    filedb_destroy(dmf->db);
-    return 1;
+
+    filedb_t *db = dmf->db;
+
+    free(dmf);
+    dm_destroy(dm);
+
+    return db;
 }
 
 int
-logicdir_ping(logicdir_t *ld)
+logicdir_ping(const logicdir_t *ld)
 {
     printf("trying directory at %s... ", ld->directory_hostname);
     fflush(stdout);

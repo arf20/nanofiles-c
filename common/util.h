@@ -24,5 +24,7 @@
     a; \
 }
 
+int is_sha1(const char *str);
+
 #endif /* _UTIL_H */
 

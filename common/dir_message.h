@@ -7,12 +7,12 @@
 /* client requests */
 const char* dm_ping(const char *protoid);
 const char* dm_filelist();
-const char* dm_publish(filedb_t *db);
+const char* dm_publish(const filedb_t *db);
 
 /* direcory responses */
 const char* dm_pingok();
 const char* dm_pingbad();
-const char* dm_filelistres(filedb_t *db);
+const char* dm_filelistres(const filedb_t *db);
 const char* dm_publishack();
 
 /* deserialize directory message */

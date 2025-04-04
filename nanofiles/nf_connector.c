@@ -24,7 +24,7 @@ nfc_new(const char *hostname)
         return NULL; /* error prop */
 
     /* set port, sin_addr is the same field in both in and in6 */
-    ((struct sockaddr_in*)&nfc->addr)->sin_port = htons(NF_P2P_PORT);
+    ((struct sockaddr_in*)&nfc->addr)->sin_port = htons(NF_DEFAULT_P2P_PORT);
 
     /* create socket */
     NF_TRY(
@@ -59,6 +59,8 @@ nfc_test(nfc_t *nfc)
 
     return *(int*)test_recv_buff == test_int;
 }
+
+
 
 void
 nfc_destroy(nfc_t *nfc)

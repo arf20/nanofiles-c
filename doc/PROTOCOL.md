@@ -188,7 +188,7 @@ Terminates current file request
 +--------+
 ```
 
-### Server requests
+### Server responses
 
 Opcode in 0x1X
 
@@ -207,7 +207,7 @@ File is available to download via chunk requests
 +--------+
 ```
 
-#### Bad chunk request error
+#### Bad file request error
 
 File is unavailable or not found
 
@@ -239,6 +239,21 @@ Data chunk of file
 +--------+------------------------------+
 | data ...
 |
+```
+
+#### Bad chunk request error
+
+Chunk out of bounds
+
+ - Opcode: 0x14
+ - Fields: None
+ - Answer to: 'chunk request'
+
+```
+0               
++--------+
+| opcode |
++--------+
 ```
 
 ## Application automaton

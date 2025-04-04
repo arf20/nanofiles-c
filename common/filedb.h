@@ -22,8 +22,10 @@ typedef struct {
 } filedb_t;
 
 filedb_t* filedb_new();
-file_info_t* filedb_insert(filedb_t *db, const char *filename, const char *hash,
-    size_t size);
+file_info_t* filedb_insert(filedb_t *db, const char *name,
+    const char *hash, size_t size);
+file_info_t* filedb_find_name(filedb_t *db, const char *name);
+file_info_t* filedb_find_hash(filedb_t *db, const char *hash);
 server_list_t* sl_new();
 void sl_insert(server_list_t *sl, const char *hostname);
 int filedb_scan(filedb_t *db, const char *dirpath);

@@ -1,5 +1,7 @@
 #include "nf_controller.h"
 
+#include "../common/util.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -46,7 +48,12 @@ ctl_process_command(ctl_t *ctl, int test_mode_tcp)
             ctl->quit = 1;
         } break;
         case CMD_LISTREMOTE: {
-            logicdir_fetch_print_files(ctl->ld);
+            /* fetch directory files and servers */
+            filedb_t *files = logicdir_fetch(ctl->ld);
+            /* print */
+            filedb_print(files, stdout);
+            /* clean up */
+            filedb_destroy(files);
         } break;
         case CMD_LISTLOCAL: {
             filedb_print(ctl->db, stdout);
@@ -64,6 +71,22 @@ ctl_process_command(ctl_t *ctl, int test_mode_tcp)
             ctl->state = logicdir_ping(ctl->ld) ? ONLINE : OFFLINE;
         } break;
         case CMD_DOWNLOAD: {
+            /* fetch files */
+            filedb_t *files = logicdir_fetch(ctl->ld);
+            /* find file */
+            file_info_t *file = NULL;
+            if (is_sha1(cmd.arg))
+                file = filedb_find_hash(files, cmd.arg);
+            else
+                file = filedb_find_name(files, cmd.arg);
+            
+            if (!file) {
+                printf("file or hash %s is not known by directory\n",
+                    cmd.arg);
+                break;
+            }
+            /* download file */
+            logicp2p_download(ctl->lp, file);
             
         } break;
         case CMD_UPLOAD: {
