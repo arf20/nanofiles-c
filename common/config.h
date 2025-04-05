@@ -12,7 +12,9 @@
 #define SOCK_TIMEOUT                1       /* seconds */
 /* nf protocol */
 #define NF_DEFAULT_P2P_PORT         10000
-#define MAX_NF_SEND_SIZE            2097165 /* 2MiB + header */
+#define MAX_NF_BUFF_SIZE            2097165 /* 2MiB + header */
+#define CHUNK_SIZE                  2097152 /* 2MiB */
+#define POLL_TIMEOUT                1000    /* milliseconds */
 
 #endif /* _CONFIG_H */
 

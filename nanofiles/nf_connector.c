@@ -1,9 +1,9 @@
 #include "nf_connector.h"
 
 #include "../common/config.h"
-
 #include "../common/netutil.h"
 #include "../common/util.h"
+#include "../common/nf_message.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,10 +13,13 @@
 
 #include <netinet/ip.h>
 
+char recv_buff[MAX_NF_BUFF_SIZE];
+
 nfc_t *
 nfc_new(const char *hostname)
 { 
     nfc_t *nfc = malloc(sizeof(nfc_t));
+    nfc->hostname = strdup(hostname);
     
     /* resolve address */
     nfc->addr = resolve_name(hostname);
@@ -42,7 +45,7 @@ nfc_new(const char *hostname)
 }
 
 int
-nfc_test(nfc_t *nfc)
+nfc_test(const nfc_t *nfc)
 {
     /* test: send int, recv and check */
     static const int test_int = 69420;
@@ -60,12 +63,65 @@ nfc_test(nfc_t *nfc)
     return *(int*)test_recv_buff == test_int;
 }
 
+int
+nfc_receive_response(const nfc_t *nfc, const char **buff)
+{
+    NF_TRY(
+        recv(nfc->sock, recv_buff, MAX_NF_BUFF_SIZE, 0) < 0,
+        "recv", strerror(errno), return 0
+    )
 
+    *buff = recv_buff;
+    return 1;
+}
+
+int
+nfc_request_file(const nfc_t *nfc, const char *hash)
+{
+    char *buff = NULL;
+    size_t reqsize = nfm_filereq(&buff, hash);
+    
+    NF_TRY(
+        send(nfc->sock, buff, reqsize, 0) < 0,
+        "send", strerror(errno), return 0
+    )
+
+    return 1;
+}
+
+int
+nfc_request_chunk(const nfc_t *nfc, size_t offset, unsigned int size)
+{
+    char *buff = NULL;
+    size_t reqsize = nfm_chunkreq(&buff, size, offset);
+    
+    NF_TRY(
+        send(nfc->sock, buff, reqsize, 0) < 0,
+        "send", strerror(errno), return 0
+    )
+
+    return 1;
+}
+
+int
+nfc_stop(const nfc_t *nfc)
+{
+    char *buff = NULL;
+    size_t reqsize = nfm_stop(&buff);
+    
+    NF_TRY(
+        send(nfc->sock, buff, reqsize, 0) < 0,
+        "send", strerror(errno), return 0
+    )
+
+    return 1;
+}
 
 void
 nfc_destroy(nfc_t *nfc)
 {
     close(nfc->sock);
+    free(nfc->hostname);
     free(nfc);
 }
 

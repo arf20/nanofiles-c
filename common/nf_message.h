@@ -3,41 +3,47 @@
 
 #include "filedb.h"
 
+#include <stdint.h>
+
 /* serialize directory messages from arguments */
 /* client requests */
 
-size_t nfm_filereq(const char *hash);
-size_t nfm_chunkreq(unsigned int size, size_t offset);
-size_t nfm_stop();
+size_t nfm_filereq(char **buff, const char *hash);
+size_t nfm_chunkreq(char **buff, unsigned int size, size_t offset);
+size_t nfm_stop(char **buff);
 
-/* direcory responses */
+/* peer responses */
 
-size_t nfm_accepted();
-size_t nfm_badfilereq();
-size_t nfm_chunk();
-size_t nfm_badchunkreq();
+size_t nfm_accepted(char **buff);
+size_t nfm_badfilereq(char **buff);
+size_t nfm_chunk(char **buff, unsigned int size, size_t offset);
+size_t nfm_badchunkreq(char **buff);
 
 /* deserialize directory message */
 typedef enum {
-    OP_FILEREQ,
+    OP_FILEREQ = 0x01,
     OP_CHUNKREQ,
     OP_STOP,
-    OP_ACCEPTED,
+    OP_ACCEPTED = 0x11,
     OP_BADFILEREQ,
     OP_CHUNK,
     OP_BADCHUNKREQ
 } opcode_t;
 
 typedef struct {
-    opcode_t operation;
-    char *data;
-    size_t size;
-} nf_message_t;
+    uint8_t opcode;
+} nf_header_base_t;
 
-/* deserialize */
+typedef struct {
+    uint8_t opcode;
+    uint8_t hash[20]; 
+} nf_header_filereq_t;
 
-nf_message_t *nfm_deserialize(const char *streamdata, size_t size);
-void nfm_destroy(nf_message_t *nfm);
+typedef struct {
+    uint8_t opcode;
+    uint64_t offset;
+    uint32_t size;
+} nf_header_chunk_t;
 
 #endif /* _NF_MESSAGE_H */
 

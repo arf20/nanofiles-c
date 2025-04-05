@@ -25,6 +25,9 @@
 }
 
 int is_sha1(const char *str);
+void sha1_str2bin(const char *sha1str, char *sha1bin);
+/* sha1str must be at least 41 bytes in size */
+void sha1_bin2str(const char *sha1bin, char *sha1str);
 
 #endif /* _UTIL_H */
 

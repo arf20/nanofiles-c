@@ -141,17 +141,19 @@ Requests availability of file to be downloaded
 
  - Opcode: 0x01
  - Fields: 
-   - fnamelen[1]: Filename length
-   - filename[fnamelen]: Filename
+   - hash[20]: Binary representation of the file's SHA-1
  - Answer: 'accepted' or 'file not found error'
 
 ```
-0        1         byte
-+--------+--------+
-| opcode |fnamelen|
-+-----------------+
-| filename        |
-| ...             |
+0        1        3        4        5
++--------+
+| opcode |
++-------------------------------------------+
+| hash                                      |
+|                                           |
+|                                           |
+|                                           |
++-------------------------------------------+
 ```
 
 #### Chunk request
@@ -228,16 +230,20 @@ Data chunk of file
 
  - Opcode: 0x13
  - Fields: 
+   - offset[8]: Starting byte of chunk
    - size[4]: Size of chunk
    - data[size]: 
  - Answer to: 'chunk request'
 
 ```
-0        1       2       3       4       byte
-+--------+------------------------------+
-| opcode | size                         |
-+--------+------------------------------+
-| data ...
+0        1       2       3       4       5       6       7       8         byte
++--------+----------------------------------------------------------------+
+| opcode | offset                                                         |
++--------+----------------------+-----------------------------------------+
+| size                          |
++-------------------------------+
+| data
+| ...
 |
 ```
 
