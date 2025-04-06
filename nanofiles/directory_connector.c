@@ -20,8 +20,7 @@ dc_new(const char *hostname)
     dc_t *dc = malloc(sizeof(dc_t));
     
     /* resolve address */
-    dc->addr = resolve_name(hostname);
-    if (dc->addr.sa_family == 0)
+    if (!resolve_name(hostname, &dc->addr))
         return NULL; /* error prop */
 
     /* set port, sin_addr is the same field in both in and in6 */
@@ -29,9 +28,19 @@ dc_new(const char *hostname)
 
     /* create socket */
     NF_TRY(
-        (dc->sock = socket(dc->addr.sa_family, SOCK_DGRAM, IPPROTO_UDP)) == 0,
+        (dc->sock = socket(dc->addr.sa_family, SOCK_DGRAM, IPPROTO_UDP)) < 0,
         "socket", strerror(errno), return NULL
     );
+
+    /* in case of IPv4 mapped as v6 */
+    if (dc->addr.sa_family == AF_INET6) {
+        int no = 0;
+        NF_TRY(
+            setsockopt(dc->sock, IPPROTO_IPV6, IPV6_V6ONLY,
+                (void*)&no, sizeof(int)) < 0,
+            "setsockopt", strerror(errno), return NULL
+        );
+    }
 
     /* set socket receive timeout option now */
     if (sock_set_timeout(dc->sock, SOCK_TIMEOUT) < 0)

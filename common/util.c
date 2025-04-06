@@ -17,7 +17,7 @@ is_sha1(const char *str)
 }
 
 void
-sha1_str2bin(const char *sha1str, char *sha1bin)
+sha1_str2bin(const char *sha1str, uint8_t *sha1bin)
 {
     for (size_t i = 0; i < 20; i++) {
         sscanf(sha1str, "%2hhx", &sha1bin[i]);
@@ -26,7 +26,7 @@ sha1_str2bin(const char *sha1str, char *sha1bin)
 }
 
 void
-sha1_bin2str(const char *sha1bin, char *sha1str)
+sha1_bin2str(const uint8_t *sha1bin, char *sha1str)
 {
     for (size_t i = 0; i < 20; i++, sha1str += 2)
         sprintf(sha1str, "%02x", sha1bin[i]);

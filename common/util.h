@@ -2,6 +2,7 @@
 #define _UTIL_H
 
 #include <stdio.h>
+#include <stdint.h>
 
 #define MAX(a, b) ((a)>(b)?(a):(b))
 #define MIN(a, b) ((a)<(b)?(a):(b))
@@ -25,9 +26,9 @@
 }
 
 int is_sha1(const char *str);
-void sha1_str2bin(const char *sha1str, char *sha1bin);
+void sha1_str2bin(const char *sha1str, uint8_t *sha1bin);
 /* sha1str must be at least 41 bytes in size */
-void sha1_bin2str(const char *sha1bin, char *sha1str);
+void sha1_bin2str(const uint8_t *sha1bin, char *sha1str);
 
 #endif /* _UTIL_H */
 

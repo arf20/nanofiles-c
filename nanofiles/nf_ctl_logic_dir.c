@@ -12,6 +12,8 @@ logicdir_new(const char *directory_hostname)
     logicdir_t *ld = malloc(sizeof(logicdir_t));
 
     ld->dc = dc_new(directory_hostname);
+    if (!ld->dc)
+        return NULL;
     ld->directory_hostname = directory_hostname;
 
     return ld;

@@ -53,6 +53,8 @@ main(int argc, char **argv)
         return 1;
 
     ctl_t *ctl = ctl_new(db, directory_hostname);
+    if (!ctl)
+        return 1;
 
     if (test_mode_udp) {
         ctl_test_directory(ctl);

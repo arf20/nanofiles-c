@@ -12,6 +12,8 @@ ctl_new(filedb_t *db, const char *directory_hostname)
 
     ctl->state = OFFLINE;
     ctl->ld = logicdir_new(directory_hostname);
+    if (!ctl->ld)
+        return NULL;
     ctl->lp = logicp2p_new();
     ctl->shell = shell_new();
     ctl->db = db;
@@ -49,7 +51,15 @@ ctl_process_command(ctl_t *ctl, int test_mode_tcp)
         } break;
         case CMD_LISTREMOTE: {
             /* fetch directory files and servers */
+            if (ctl->state != ONLINE) {
+                printf("offline\n");
+                break;
+            }
             filedb_t *files = logicdir_fetch(ctl->ld);
+            if (!files) {
+                printf("could not contact directory\n");
+                break;
+            }
             /* print */
             filedb_print(files, stdout);
             /* clean up */
@@ -59,7 +69,12 @@ ctl_process_command(ctl_t *ctl, int test_mode_tcp)
             filedb_print(ctl->db, stdout);
         } break;
         case CMD_SERVE: {
-            logicdir_register_server(ctl->ld, ctl->db); 
+            if (ctl->state != ONLINE) {
+                printf("offline\n");
+                break;
+            }
+            if (!logicdir_register_server(ctl->ld, ctl->db))
+                break;
 
             if (test_mode_tcp) {
                 logicp2p_test_server(ctl->lp);
@@ -72,7 +87,15 @@ ctl_process_command(ctl_t *ctl, int test_mode_tcp)
         } break;
         case CMD_DOWNLOAD: {
             /* fetch files */
+            if (ctl->state != ONLINE) {
+                printf("offline\n");
+                break;
+            }
             filedb_t *files = logicdir_fetch(ctl->ld);
+            if (!files) {
+                printf("could not contact directory\n");
+                break;
+            }
             /* find file */
             file_info_t *file = NULL;
             if (is_sha1(cmd.arg))

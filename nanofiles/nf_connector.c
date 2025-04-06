@@ -22,11 +22,10 @@ nfc_new(const char *hostname)
     nfc->hostname = strdup(hostname);
     
     /* resolve address */
-    nfc->addr = resolve_name(hostname);
-    if (nfc->addr.sa_family == 0)
+    if (!resolve_name(hostname, &nfc->addr))
         return NULL; /* error prop */
 
-    /* set port, sin_addr is the same field in both in and in6 */
+    /* set port, sin_port is the same field in both in and in6 */
     ((struct sockaddr_in*)&nfc->addr)->sin_port = htons(NF_DEFAULT_P2P_PORT);
 
     /* create socket */
@@ -35,9 +34,19 @@ nfc_new(const char *hostname)
         "socket", strerror(errno), return NULL
     );
 
+    /* if IPv4 mapped as v6 */
+    if (nfc->addr.sa_family == AF_INET6) {
+        int no = 0;
+        NF_TRY(
+            setsockopt(nfc->sock, IPPROTO_IPV6, IPV6_V6ONLY,
+                (void*)&no, sizeof(int)) < 0,
+            "setsockopt", strerror(errno), return NULL
+        );
+    }
+
     /* connect to server */
     NF_TRY(
-        connect(nfc->sock, &nfc->addr, sizeof(nfc->addr)),
+        connect(nfc->sock, &nfc->addr, sa_len(&nfc->addr)),
         "connect", strerror(errno), return NULL
     )
 

@@ -126,10 +126,12 @@ ds_register_peer(filedb_t *serverdb, const filedb_t *registerlist,
     const char *client_hostname)
 {
     for (int i = 0; i < registerlist->size; i++) {
-        int idx = filedb_find(serverdb, registerlist->vec[i].hash);
-        if (idx > 0) {
-            /* already in db, add peer */
-            sl_insert(serverdb->vec[idx].serverlist, client_hostname);
+        file_info_t *fi = filedb_find_hash(serverdb, registerlist->vec[i].hash);
+        if (fi) {
+            /* already in db */
+            if (!sl_exists(fi->serverlist, client_hostname))
+                /* peer already registered */
+                sl_insert(fi->serverlist, client_hostname);
         } else {
             /* otherwise, insert new file */
             file_info_t *fi = filedb_insert(serverdb, registerlist->vec[i].name,

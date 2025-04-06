@@ -77,6 +77,15 @@ sl_insert(server_list_t *sl, const char *hostname)
     sl->size++;
 }
 
+int
+sl_exists(server_list_t *sl, const char *hostname)
+{
+    for (int i = 0; i < sl->size; i++)
+        if (strcmp(sl->vec[i], hostname) == 0)
+            return 1;
+    return 0;
+}
+
 const char*
 compute_file_hash(const char *filename)
 {
@@ -147,16 +156,6 @@ filedb_scan(filedb_t *db, const char *dirpath)
     closedir(dir);
 
     return 0;
-}
-
-int
-filedb_find(const filedb_t *db, const char *hash)
-{
-    for (int i = 0; i < db->size; i++) {
-        if (strcmp(db->vec[i].hash, hash) == 0)
-            return i;
-    }
-    return -1;
 }
 
 void

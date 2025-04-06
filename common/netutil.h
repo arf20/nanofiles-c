@@ -3,7 +3,7 @@
 
 #include <sys/socket.h>
 
-struct sockaddr resolve_name(const char *name);
+int resolve_name(const char *name, struct sockaddr *out_addr);
 socklen_t sa_len(const struct sockaddr *sa);
 int sock_set_timeout(int fd, int timeoutsec);
 
