@@ -2,7 +2,9 @@
 
 #include "../common/config.h"
 #include "../common/util.h"
-#include "../common/nf_message.h"
+
+#include "nf_message.h"
+#include "nf_config.h"
 #include "nf_connector.h"
 
 #include <stdlib.h>
@@ -93,11 +95,8 @@ select_request_chunk(chunk_state_t *chunk_states, int chunks,
 }
 
 int
-logicp2p_download(const logicp2p_t *lp, const file_info_t *fi)
+logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
 {
-    /* open output file */
-    FILE *output = fopen(fi->name, "wb");
-    NF_TRY(!output, "fopen", strerror(errno), return 0);
     /* connect to all serverlist */
     nfc_t **connections = malloc(sizeof(nfc_t*) * fi->serverlist->size);
     int peers_reached = 0;
@@ -113,8 +112,10 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi)
        
 
     /* divide file in chunks */
-    int chunks = (fi->size / CHUNK_SIZE) + (fi->size % CHUNK_SIZE);
+    int chunks = (fi->size / CHUNK_SIZE) + (fi->size % CHUNK_SIZE > 0);
     chunk_state_t *chunk_states = malloc(sizeof(chunk_state_t) * chunks);
+    for (int i = 0; i < chunks; i++)
+        chunk_states[i] = CHUNK_QUEUED;
     int chunks_remaining = chunks;
 
     /* first send: tell peer what file to download */
@@ -151,7 +152,8 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi)
 
     /* poll loop */
     int pollres = 0, finished = 0;
-    while (!finished && (pollres = poll(fds, peers_reached, POLL_TIMEOUT)) < 0) {
+    while (!finished && (pollres = poll(fds, peers_reached, POLL_TIMEOUT)) >= 0)
+    {
         NF_TRY(pollres == 0, "poll", "timed out, retrying...", );
         /* walk sockets looking for data */
         for (int i = 0; i < peers_reached; i++) {

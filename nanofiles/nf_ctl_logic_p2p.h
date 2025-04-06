@@ -11,7 +11,8 @@ typedef struct {
 
 logicp2p_t* logicp2p_new();
 int logicp2p_test_client(logicp2p_t *lp, const char *hostname);
-int logicp2p_download(const logicp2p_t *lp, const file_info_t *fi);
+int logicp2p_download(const logicp2p_t *lp, const file_info_t *fi,
+    FILE *output);
 int logicp2p_test_server(logicp2p_t *lp);
 void logicp2p_start_server(logicp2p_t *lp);
 void logicp2p_destroy(logicp2p_t *lp);

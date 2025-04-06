@@ -1,7 +1,8 @@
 #include "nf_message.h"
 
-#include "config.h"
-#include "util.h"
+#include "../common/config.h"
+#include "../common/util.h"
+#include "nf_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

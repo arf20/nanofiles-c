@@ -4,9 +4,9 @@
 #include <sys/socket.h>
 
 typedef struct {
-    int sock; 
-    struct sockaddr addr;
     char *hostname;
+    int sock; 
+    struct sockaddr *addr;
 } nfc_t;
 
 nfc_t* nfc_new(const char *hostname);

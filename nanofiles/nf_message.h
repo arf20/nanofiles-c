@@ -1,7 +1,7 @@
 #ifndef _NF_MESSAGE_H
 #define _NF_MESSAGE_H
 
-#include "filedb.h"
+#include "../common/filedb.h"
 
 #include <stdint.h>
 

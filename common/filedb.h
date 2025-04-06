@@ -29,7 +29,7 @@ file_info_t* filedb_find_hash(filedb_t *db, const char *hash);
 server_list_t* sl_new();
 void sl_insert(server_list_t *sl, const char *hostname);
 int sl_exists(server_list_t *sl, const char *hostname);
-int filedb_scan(filedb_t *db, const char *dirpath);
+int filedb_scan(filedb_t *db, const char *basepath, const char *dirpath);
 void filedb_print(const filedb_t *db, FILE *f);
 void filedb_destroy(filedb_t *db);
 

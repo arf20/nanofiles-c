@@ -16,8 +16,8 @@ usage(const char *argv0)
         "usage: %s [-tu|-tt|-d <dir>|-s <hostname>]\n"
         "\t-tu:\ttest mode udp\n"
         "\t-tt:\ttest mode tcp\n"
-        "\t-d dir:\tshared directory\n"
-        "\t-t hostnamet:\tdirectory server hostname\n",
+        "\t-d host:\tdirectory server hostname\n"
+        "\t-s path:\tshared path\n",
         argv0);
     exit(1);
 }
@@ -49,10 +49,10 @@ main(int argc, char **argv)
     printf("scanning %s...\n", shared_dir);
 
     filedb_t *db = filedb_new();
-    if (filedb_scan(db, shared_dir) < 0)
+    if (filedb_scan(db, shared_dir, "") < 0)
         return 1;
 
-    ctl_t *ctl = ctl_new(db, directory_hostname);
+    ctl_t *ctl = ctl_new(db, directory_hostname, shared_dir);
     if (!ctl)
         return 1;
 

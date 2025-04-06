@@ -3,7 +3,9 @@
 #include "../common/config.h"
 #include "../common/netutil.h"
 #include "../common/util.h"
-#include "../common/nf_message.h"
+
+#include "nf_message.h"
+#include "nf_config.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,22 +22,23 @@ nfc_new(const char *hostname)
 { 
     nfc_t *nfc = malloc(sizeof(nfc_t));
     nfc->hostname = strdup(hostname);
+    nfc->addr = malloc(sizeof(struct sockaddr_storage));
     
     /* resolve address */
-    if (!resolve_name(hostname, &nfc->addr))
+    if (!resolve_name(hostname, nfc->addr))
         return NULL; /* error prop */
 
     /* set port, sin_port is the same field in both in and in6 */
-    ((struct sockaddr_in*)&nfc->addr)->sin_port = htons(NF_DEFAULT_P2P_PORT);
+    ((struct sockaddr_in*)nfc->addr)->sin_port = htons(NF_DEFAULT_P2P_PORT);
 
     /* create socket */
     NF_TRY(
-        (nfc->sock = socket(nfc->addr.sa_family, SOCK_STREAM, IPPROTO_TCP)) == 0,
+        (nfc->sock = socket(nfc->addr->sa_family, SOCK_STREAM, IPPROTO_TCP)) == 0,
         "socket", strerror(errno), return NULL
     );
 
     /* if IPv4 mapped as v6 */
-    if (nfc->addr.sa_family == AF_INET6) {
+    if (nfc->addr->sa_family == AF_INET6) {
         int no = 0;
         NF_TRY(
             setsockopt(nfc->sock, IPPROTO_IPV6, IPV6_V6ONLY,
@@ -46,7 +49,7 @@ nfc_new(const char *hostname)
 
     /* connect to server */
     NF_TRY(
-        connect(nfc->sock, &nfc->addr, sa_len(&nfc->addr)),
+        connect(nfc->sock, nfc->addr, sa_len(nfc->addr)),
         "connect", strerror(errno), return NULL
     )
 

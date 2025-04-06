@@ -4,9 +4,11 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 ctl_t*
-ctl_new(filedb_t *db, const char *directory_hostname)
+ctl_new(filedb_t *db, const char *directory_hostname, const char *shared_dir)
 {
     ctl_t *ctl = malloc(sizeof(ctl_t));
 
@@ -19,6 +21,7 @@ ctl_new(filedb_t *db, const char *directory_hostname)
     ctl->db = db;
     ctl->quit = 0;
     ctl->directory_hostname = directory_hostname;
+    ctl->shared_dir = shared_dir;
 
     return ctl;
 }
@@ -109,7 +112,13 @@ ctl_process_command(ctl_t *ctl, int test_mode_tcp)
                 break;
             }
             /* download file */
-            logicp2p_download(ctl->lp, file);
+            /*    open output file */
+            char output_path[4096];
+            snprintf(output_path, 4096, "%s%s", ctl->shared_dir, file->name);
+            FILE *output = fopen(output_path, "wb");
+            NF_TRY(!output, "fopen", strerror(errno), break);
+            
+            logicp2p_download(ctl->lp, file, output);
             
         } break;
         case CMD_UPLOAD: {

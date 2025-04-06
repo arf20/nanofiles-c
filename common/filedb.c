@@ -118,14 +118,16 @@ get_file_size(const char *filename)
 }
 
 int
-filedb_scan(filedb_t *db, const char *dirpath)
+filedb_scan(filedb_t *db, const char *basepath, const char *dirpath)
 {
     DIR *dir = NULL;
-    static char buff[4096];
+    static char buff[4096] = { 0 };
+
+    snprintf(buff, 4096, "%s%s", basepath, dirpath);
 
     NF_TRY_C(
-        (dir = opendir(dirpath)) == NULL,
-        "opendir", strerror(errno), dirpath, return -1
+        (dir = opendir(buff)) == NULL,
+        "opendir", strerror(errno), buff, return -1
     );
     
     struct dirent *de = NULL;
@@ -140,15 +142,17 @@ filedb_scan(filedb_t *db, const char *dirpath)
                     (de->d_name[1] == '.' && de->d_name[2] == '\0')))   
                         continue;
                 snprintf(buff, 4096, "%s%s/", dirpath, de->d_name);
-                filedb_scan(db, buff);
+                char *nextdir = strdup(buff);
+                filedb_scan(db, basepath, nextdir);
+                free(nextdir);
             } break;
             case DT_REG: {
+                snprintf(buff, 4096, "%s%s%s", basepath, dirpath, de->d_name);
+                size_t fsize = get_file_size(buff);
+                const char *fhash = strdup(compute_file_hash(buff));
                 snprintf(buff, 4096, "%s%s", dirpath, de->d_name);
-                filedb_insert(db,
-                    strdup(buff),
-                    strdup(compute_file_hash(buff)),
-                    get_file_size(buff)
-                );
+
+                filedb_insert(db, strdup(buff), fhash, fsize);
             } break;
         }
     }
