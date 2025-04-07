@@ -241,6 +241,7 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
                             continue;
                         }
                         remaining -= recv_bytes;
+                        off += recv_bytes;
                     }
 
                     /* we got a chunk, write it */
@@ -256,6 +257,11 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
                         1, chunk_header->size, output);
                     chunks_remaining--;
 
+                    printf("\rchunks %d bytes %ld %.2f%%",
+                        chunks - chunks_remaining, chunk_header->offset,
+                        ((float)(chunks - chunks_remaining) / (float)chunks)
+                        * 100.0f);
+
                     if (chunks_remaining == 0) {
                         stop = 1;
                         break;
@@ -269,11 +275,6 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
                         break;
                     }
                     DEBUG("nf_connector", "-> chunkreq");
-
-                    printf("\rchunks %d bytes %ld %.2f%%",
-                        chunks - chunks_remaining + 1, chunk_header->offset,
-                        ((float)(chunks - chunks_remaining) / (float)chunks)
-                        * 100.0f);
                 } break;
                 case OP_BADCHUNKREQ: {
                     /* bad chunk request? */
