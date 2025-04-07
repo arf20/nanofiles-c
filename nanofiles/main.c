@@ -71,6 +71,7 @@ main(int argc, char **argv)
     } while (!ctl->quit);
 
     ctl_destroy(ctl);
+    filedb_destroy(db);
 
     return 0;
 }

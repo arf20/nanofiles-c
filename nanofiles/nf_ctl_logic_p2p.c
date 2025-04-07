@@ -16,7 +16,6 @@
 #include <sys/time.h>
 
 #include <arpa/inet.h>
-#include <pthread.h>
 
 typedef enum {
     CHUNK_QUEUED,
@@ -30,6 +29,7 @@ logicp2p_new(const char *shared_dir, const filedb_t *localdb)
     logicp2p_t *lp = malloc(sizeof(logicp2p_t));
     lp->shared_dir = shared_dir;
     lp->localdb = localdb;
+    lp->accept_thread = 0;
 
     return lp;
 }
@@ -101,12 +101,12 @@ select_request_chunk(chunk_state_t *chunk_states, int chunks,
 int
 logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
 {
-    /* connect to all serverlist */
-    nfc_t **connections = malloc(sizeof(nfc_t*) * fi->serverlist->size);
+    /* connect to all peerlist */
+    nfc_t **connections = malloc(sizeof(nfc_t*) * fi->peerlist->size);
     int peers_reached = 0;
-    for (int i = 0; i < fi->serverlist->size; i++) {
-        DEBUG_VA("nf_connector", "connecting to %s... ", fi->serverlist->vec[i]);
-        connections[i] = nfc_new(fi->serverlist->vec[i]);
+    for (int i = 0; i < fi->peerlist->size; i++) {
+        DEBUG_VA("nf_connector", "connecting to %s... ", fi->peerlist->vec[i]);
+        connections[i] = nfc_new(fi->peerlist->vec[i]);
         if (connections[i]) {
             if (debug) printf("ok\n");
             peers_reached++;
@@ -123,7 +123,7 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
     int chunks_remaining = chunks;
 
     /* first send: tell peer what file to download */
-    for (int i = 0; i < fi->serverlist->size; i++) {
+    for (int i = 0; i < fi->peerlist->size; i++) {
         if (!connections[i])
             continue;
 
@@ -146,7 +146,7 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
     /* set up fds for poll */
     struct pollfd *fds = malloc(sizeof(struct pollfd) * peers_reached);
     int *fd_nfc_idx = malloc(sizeof(struct pollfd) * peers_reached);
-    for (int fdidx = 0, i = 0; i < fi->serverlist->size; i++) {
+    for (int fdidx = 0, i = 0; i < fi->peerlist->size; i++) {
         if (!connections[i])
             continue;
         fds[fdidx].fd = connections[i]->sock;
@@ -311,7 +311,7 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
 
 
     /* disconnect clients */
-    for (int i = 0; i < fi->serverlist->size; i++)
+    for (int i = 0; i < fi->peerlist->size; i++)
         if (connections[i])
             nfc_destroy(connections[i]);
 
@@ -492,14 +492,15 @@ logicp2p_start_server(logicp2p_t *lp)
     }
 
     printf("started accept thread\n");
-    pthread_t accept_thread;
-    pthread_create(&accept_thread, NULL, accept_loop, lp);
-    pthread_detach(accept_thread);
+    pthread_create(&lp->accept_thread, NULL, accept_loop, lp);
+    pthread_detach(lp->accept_thread);
 }
 
 void
 logicp2p_destroy(logicp2p_t *lp)
 {
+    if (lp->accept_thread)
+        pthread_cancel(lp->accept_thread);
     free(lp);
 }
 

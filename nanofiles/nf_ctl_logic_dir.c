@@ -49,9 +49,11 @@ logicdir_register_server(const logicdir_t *ld, const filedb_t *db)
     dir_message_t *dm = dm_deserialize(response);
     if (dm && dm->operation == OPER_PUBLISHACK) {
         printf("ok\n");
+        dm_destroy(dm);
         return 1;
     } else {
         printf("failed\n");
+        dm_destroy(dm);
         return 0;
     }
 }
@@ -100,5 +102,6 @@ void
 logicdir_destroy(logicdir_t *ld)
 {
     dc_destroy(ld->dc);
+    free(ld);
 }
 

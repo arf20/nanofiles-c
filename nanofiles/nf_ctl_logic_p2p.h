@@ -5,10 +5,13 @@
 
 #include "nf_server.h"
 
+#include <pthread.h>
+
 typedef struct {
     const char *shared_dir;
     const filedb_t *localdb;
     nfs_t *nfs;
+    pthread_t accept_thread;
 } logicp2p_t;
 
 logicp2p_t* logicp2p_new(const char *shared_dir, const filedb_t *localdb);

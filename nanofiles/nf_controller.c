@@ -131,6 +131,8 @@ void
 ctl_destroy(ctl_t *ctl)
 {
     shell_destroy(ctl->shell);
+    logicp2p_destroy(ctl->lp);
+    logicdir_destroy(ctl->ld);
     free(ctl);
 }
 

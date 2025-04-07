@@ -32,6 +32,7 @@ filedb_insert(filedb_t *db, const char *name, const char *hash, size_t size)
     db->vec[db->size].name = name;
     db->vec[db->size].hash = hash;
     db->vec[db->size].size = size;
+    db->vec[db->size].peerlist = NULL;
     db->size++;
 
     return &db->vec[db->size - 1];
@@ -55,10 +56,10 @@ filedb_find_hash(const filedb_t *db, const char *hash)
     return NULL;
 }
 
-server_list_t*
+peer_list_t*
 sl_new()
 {
-    server_list_t *sl = malloc(sizeof(server_list_t));
+    peer_list_t *sl = malloc(sizeof(peer_list_t));
     sl->size = 0;
     sl->capacity = INITIAL_VECTOR_CAPACITY;
     sl->vec = malloc(sizeof(char*) * sl->capacity);
@@ -66,7 +67,7 @@ sl_new()
 }
 
 void
-sl_insert(server_list_t *sl, const char *hostname)
+sl_insert(peer_list_t *sl, const char *hostname)
 {
     if (sl->size + 1 > sl->capacity) {
         sl->capacity *= 2;
@@ -78,7 +79,7 @@ sl_insert(server_list_t *sl, const char *hostname)
 }
 
 int
-sl_exists(server_list_t *sl, const char *hostname)
+sl_exists(peer_list_t *sl, const char *hostname)
 {
     for (int i = 0; i < sl->size; i++)
         if (strcmp(sl->vec[i], hostname) == 0)
@@ -169,10 +170,10 @@ filedb_print(const filedb_t *db, FILE *f)
     for (int i = 0; i < db->size; i++) {
         printf("\t%s\t%ld\t%s", db->vec[i].hash, db->vec[i].size,
             db->vec[i].name);
-        if (db->vec[i].serverlist) {
+        if (db->vec[i].peerlist) {
             printf("\t");
-            for (int j = 0; j < db->vec[i].serverlist->size; j++)
-                printf(" %s", db->vec[i].serverlist->vec[j]);
+            for (int j = 0; j < db->vec[i].peerlist->size; j++)
+                printf(" %s", db->vec[i].peerlist->vec[j]);
         }
         printf("\n");
     }
@@ -184,10 +185,10 @@ filedb_destroy(filedb_t *db)
     for (int i = 0; i < db->size; i++) {
         free((char*)db->vec[i].hash);
         free((char*)db->vec[i].name);
-        if (db->vec[i].serverlist) {
-            for (int j = 0; j < db->vec[i].serverlist->size; j++)
-                free((char*)db->vec[i].serverlist->vec[j]);
-            free(db->vec[i].serverlist);
+        if (db->vec[i].peerlist) {
+            for (int j = 0; j < db->vec[i].peerlist->size; j++)
+                free((char*)db->vec[i].peerlist->vec[j]);
+            free(db->vec[i].peerlist);
         }
     }
     free(db->vec);

@@ -109,12 +109,16 @@ dc_ping_raw(dc_t *dc)
 
     dir_message_t *dm = dm_deserialize(res);
 
-    return dm->operation == OPER_PINGOK;
+    int check = dm->operation == OPER_PINGOK;
+
+    dm_destroy(dm);
+    return check;
 }
 
 void
 dc_destroy(dc_t *dc)
 {
     close(dc->sock);
+    free(dc);
 }
 

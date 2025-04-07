@@ -67,11 +67,11 @@ dm_filelistres(const filedb_t *db)
         off += snprintf(buff + off, MAX_DGRAM_SIZE - off,
             "%s: %s; %ld; ", db->vec[i].hash, db->vec[i].name, db->vec[i].size);
 
-        for (size_t j = 0; j < db->vec[i].serverlist->size; j++) {
+        for (size_t j = 0; j < db->vec[i].peerlist->size; j++) {
             off += snprintf(buff + off, MAX_DGRAM_SIZE - off,
-                "%s", db->vec[i].serverlist->vec[j]);
+                "%s", db->vec[i].peerlist->vec[j]);
 
-            if (j != db->vec[i].serverlist->size - 1)
+            if (j != db->vec[i].peerlist->size - 1)
                 off += snprintf(buff + off, MAX_DGRAM_SIZE - off, "; ");
         }
         off += snprintf(buff + off, MAX_DGRAM_SIZE - off, "\n");
@@ -297,7 +297,7 @@ dm_deserialize_filelistres(dir_message_t *dm, const char *datagram)
         ptr = strip(tokend + 1);
 
         file_info_t *fi = filedb_insert(dmp->filelist, name, hash, size);
-        fi->serverlist = sl_new();
+        fi->peerlist = sl_new();
 
         while (*ptr) {
             tokend = strpbrk(ptr, ",\n");
@@ -310,7 +310,7 @@ dm_deserialize_filelistres(dir_message_t *dm, const char *datagram)
             );
 
             if (tokend - ptr) {
-                sl_insert(fi->serverlist, strndup(ptr, tokend - ptr));
+                sl_insert(fi->peerlist, strndup(ptr, tokend - ptr));
             } else {
                 NF_TRY_C(
                     1,
