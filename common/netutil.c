@@ -27,16 +27,6 @@ resolve_name(const char *name, struct sockaddr *out_addr)
     /* return first address */
     memcpy(out_addr, ai->ai_addr, ai->ai_addrlen);
 
-    char addr_str_buff[INET6_ADDRSTRLEN];
-    if (ai->ai_family == AF_INET6) {
-        inet_ntop(AF_INET6, &(((struct sockaddr_in6*)out_addr)->sin6_addr),
-            addr_str_buff, INET6_ADDRSTRLEN);
-    } else {
-        inet_ntop(AF_INET, &(((struct sockaddr_in*)out_addr)->sin_addr),
-            addr_str_buff, INET6_ADDRSTRLEN);
-    }
-    printf("resolved %s as %s\n", name, addr_str_buff);
-
     freeaddrinfo(ai);
 
     return 1;

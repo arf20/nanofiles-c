@@ -30,16 +30,17 @@ typedef enum {
     OP_BADCHUNKREQ
 } opcode_t;
 
-typedef struct {
+/* we are sending this thorugh a socket, so pack it with no gaps */
+typedef struct __attribute__((packed)) {
     uint8_t opcode;
 } nf_header_base_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint8_t opcode;
     uint8_t hash[20]; 
 } nf_header_filereq_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint8_t opcode;
     uint64_t offset;
     uint32_t size;

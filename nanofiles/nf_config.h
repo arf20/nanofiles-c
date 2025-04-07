@@ -11,6 +11,7 @@
 #define CHUNK_SIZE                  2097152 /* 2MiB */
 #define POLL_TIMEOUT                1000    /* milliseconds */
 
+extern int debug;
 
 #endif /* _NF_CONFIG_H */
 

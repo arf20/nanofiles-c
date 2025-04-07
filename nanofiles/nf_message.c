@@ -42,7 +42,7 @@ nfm_stop(const char **buff)
     header->opcode = OP_STOP;
 
     *buff = msg_buff;
-    return sizeof(nf_header_chunk_t);
+    return sizeof(nf_header_base_t);
 }
 
 /* server responses */
@@ -54,7 +54,7 @@ nfm_accepted(const char **buff)
     header->opcode = OP_ACCEPTED;
 
     *buff = msg_buff;
-    return sizeof(nf_header_chunk_t);
+    return sizeof(nf_header_base_t);
 }
 
 size_t
@@ -64,7 +64,7 @@ nfm_badfilereq(const char **buff)
     header->opcode = OP_BADFILEREQ;
 
     *buff = msg_buff;
-    return sizeof(nf_header_chunk_t);
+    return sizeof(nf_header_base_t);
 }
 
 /* only fills the header */
@@ -72,7 +72,7 @@ size_t
 nfm_chunk(char **buff, unsigned int size, size_t offset)
 {
     nf_header_chunk_t *header = (nf_header_chunk_t*)msg_buff;
-    header->opcode = OP_CHUNKREQ;
+    header->opcode = OP_CHUNK;
     header->offset = offset;
     header->size = size;
 
@@ -87,6 +87,6 @@ nfm_badchunkreq(const char **buff)
     header->opcode = OP_BADCHUNKREQ;
 
     *buff = msg_buff;
-    return sizeof(nf_header_chunk_t);
+    return sizeof(nf_header_base_t);
 }
 

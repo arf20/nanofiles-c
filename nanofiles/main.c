@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+int debug = 0;
+
 void
 usage(const char *argv0)
 {
@@ -16,8 +18,9 @@ usage(const char *argv0)
         "usage: %s [-tu|-tt|-d <dir>|-s <hostname>]\n"
         "\t-tu:\ttest mode udp\n"
         "\t-tt:\ttest mode tcp\n"
-        "\t-d host:\tdirectory server hostname\n"
-        "\t-s path:\tshared path\n",
+        "\t-s host:\tdirectory server hostname\n"
+        "\t-p path:\tshared path\n"
+        "\t-d debug:\tdebug\n"
         argv0);
     exit(1);
 }
@@ -30,11 +33,11 @@ main(int argc, char **argv)
     int test_mode_udp = 0, test_mode_tcp = 0;
 
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-d") == 0) {
+        if (strcmp(argv[i], "-s") == 0) {
             if (i + 1 >= argc) usage(argv[0]);
             directory_hostname = argv[i + 1];
             i++;
-        } else if (strcmp(argv[i], "-s") == 0) {
+        } else if (strcmp(argv[i], "-p") == 0) {
             if (i + 1 >= argc) usage(argv[0]);
             shared_dir = argv[i + 1];
             i++;
@@ -42,6 +45,8 @@ main(int argc, char **argv)
             test_mode_udp = 1;
         } else if (strcmp(argv[i], "-tt") == 0) {
             test_mode_tcp = 1;
+        } else if (strcmp(argv[i], "-d") == 0) {
+            debug = 1;
         } else
             usage(argv[0]);
     }

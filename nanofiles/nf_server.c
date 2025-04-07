@@ -140,7 +140,7 @@ nfs_nfc_recv(const nf_client_t *client, const char **recv_data)
 
     NF_TRY(
         (res = recv(client->sock, recv_buff, MAX_NF_BUFF_SIZE, 0)) < 0,
-        "recv", strerror(errno), return -1
+        "recv", strerror(errno), return res
     );
 
     *recv_data = recv_buff;

@@ -104,7 +104,7 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
     nfc_t **connections = malloc(sizeof(nfc_t*) * fi->serverlist->size);
     int peers_reached = 0;
     for (int i = 0; i < fi->serverlist->size; i++) {
-        printf("connecting to %s... ", fi->serverlist->vec[i]);
+        printf("nf_connector: connecting to %s... ", fi->serverlist->vec[i]);
         connections[i] = nfc_new(fi->serverlist->vec[i]);
         if (connections[i]) {
             printf("ok\n");
@@ -131,13 +131,14 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
             connections[i] = NULL;
             peers_reached--;
         }
+        printf("nf_connector: -> filereq\n");
     }
 
     if (peers_reached == 0) {
-        printf("no peers could be reached for file %s - stopped\n", fi->name);
+        printf("nf_connector: no peers could be reached for file %s - stopped\n", fi->name);
         return 0;
     } else
-        printf("downloading %d chunks from %d peers...\n",
+        printf("nf_connector: downloading %d chunks from %d peers...\n",
             chunks, peers_reached);
 
 
@@ -154,10 +155,10 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
     }
 
     /* poll loop */
-    int pollres = 0, finished = 0;
-    while (!finished && (pollres = poll(fds, peers_reached, POLL_TIMEOUT)) >= 0)
+    int pollres = 0, stop = 0;
+    while (!stop && (pollres = poll(fds, peers_reached, POLL_TIMEOUT)) >= 0)
     {
-        NF_TRY(pollres == 0, "poll", "timed out, retrying...", );
+        NF_TRY(pollres == 0, "poll", "timed out, retrying...", continue);
         /* walk sockets looking for data */
         for (int i = 0; i < peers_reached; i++) {
             if (fds[i].revents == 0)
@@ -165,31 +166,40 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
             NF_TRY(
                 fds[i].revents != POLLIN,
                 "poll(.revents)", "idk, closing",
-                nfc_destroy(connections[fd_nfc_idx[i]]);
+                if (connections[fd_nfc_idx[i]])
+                    nfc_destroy(connections[fd_nfc_idx[i]]);
                 continue;
             );
 
             /* receive data */
             const char *buff = NULL;
-            if (!nfc_receive_response(connections[fd_nfc_idx[i]], &buff)) {
+            ssize_t recv_bytes = nfc_recv(connections[fd_nfc_idx[i]], &buff);
+            if (recv_bytes <= 0) {
+                if (recv_bytes == 0)
+                    printf("nf_connector: peer closed connection\n");
                 nfc_destroy(connections[fd_nfc_idx[i]]);
+                connections[fd_nfc_idx[i]] = NULL;
                 continue;
             }
 
             switch (((const nf_header_base_t*)buff)->opcode) {
                 case OP_ACCEPTED: {
+                    printf("nf_connector: <- accepted\n");
                     /* request chunk */
                     int res = select_request_chunk(chunk_states, chunks,
                         connections[fd_nfc_idx[i]], fi->size);
                     if (res == 0)
-                        finished = 1;
+                        stop = 2;
+                    printf("nf_connector: -> chunkreq\n");
                 } break;
                 case OP_BADFILEREQ: {
-                    printf("peer %s does not have this file\n",
+                    printf("nf_connector: peer %s does not have this file\n",
                         connections[fd_nfc_idx[i]]->hostname);
                     nfc_destroy(connections[fd_nfc_idx[i]]);
+                    stop = 2;
                 } break;
                 case OP_CHUNK: {
+                    printf("nf_connector: <- chunk\n");
                     /* we got a chunk, write it */
                     const nf_header_chunk_t *chunk_header =
                         (const nf_header_chunk_t*)buff;
@@ -204,11 +214,19 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
                         1, chunk_header->size, output);
                     chunks_remaining--;
 
+                    if (chunks_remaining == 0) {
+                        stop = 1;
+                        break;
+                    }
+
                     /* and request another */
                     int res = select_request_chunk(chunk_states, chunks,
                         connections[fd_nfc_idx[i]], fi->size);
-                    if (res == 0)
-                        finished = 1;
+                    if (res == 0) {
+                        stop = 1;
+                        break;
+                    }
+                    printf("nf_connector: -> chunkreq\n");
                 } break;
                 case OP_BADCHUNKREQ: {
                     /* bad chunk request? */
@@ -217,8 +235,12 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
                     int res = select_request_chunk(chunk_states, chunks,
                         connections[fd_nfc_idx[i]], fi->size);
                     if (res == 0)
-                        finished = 1;
+                        stop = 1;
+                    printf("nf_connector: -> chunkreq\n");
                 }
+                default: {
+                    printf("nf_client: unknown response\n");
+                } break;
             }
         }
     }
@@ -256,6 +278,16 @@ typedef struct {
     nf_client_t *client;
 } client_loop_data_t;
 
+void
+send_badchunkreq(const nf_client_t *client)
+{
+    const char *send_buff = NULL;
+    size_t send_size = nfm_badchunkreq(&send_buff);
+    nfs_nfc_send(client, send_buff, send_size);
+    printf("nf_server(%s): filereq -> badfilereq\n",
+        client->hostname);
+}
+
 /* recv loop */
 static void*
 client_loop(void *arg)
@@ -266,10 +298,10 @@ client_loop(void *arg)
 
     /* recv data */
     const char *buff = NULL;
-    ssize_t recv_size = 0;
-    while ((recv_size = nfs_nfc_recv(tdata->client, &buff)) >= 0) {
-        if (recv_size == 0) {
-            printf("nf_server(%s): empty response from client - closed?\n",
+    ssize_t recv_bytes = 0;
+    while ((recv_bytes = nfs_nfc_recv(tdata->client, &buff)) >= 0) {
+        if (recv_bytes == 0) {
+            printf("nf_server(%s): peer closed connection\n",
                 tdata->client->hostname);
             break;
         }
@@ -310,10 +342,44 @@ client_loop(void *arg)
                     tdata->client->hostname);
             } break;
             case OP_CHUNKREQ: {
+                if (!reqd_file)
+                    send_badchunkreq(tdata->client);
 
+                const nf_header_chunk_t *cr =
+                    (const nf_header_chunk_t*)buff;
+
+                char *send_buff = NULL;
+                size_t send_size = nfm_chunk(&send_buff, cr->size, cr->offset);
+                char *send_chunk_data = send_buff + send_size;
+
+                NF_TRY(
+                    fseek(reqd_file, cr->offset, SEEK_SET) < 0,
+                    "fseek", strerror(errno), send_badchunkreq(tdata->client);
+                    break
+                );
+
+                size_t read_bytes = 0;
+                NF_TRY(
+                    (read_bytes = fread(send_chunk_data, 1, cr->size,
+                        reqd_file)) < 0,
+                    "fread", strerror(errno), send_badchunkreq(tdata->client);
+                    break
+                );
+
+                if (read_bytes != cr->size) {
+                    send_badchunkreq(tdata->client);
+                    break;
+                }
+
+                nfs_nfc_send(tdata->client, send_buff, send_size + read_bytes);
+                printf("nf_server(%s): chunkreq -> chunk\n",
+                    tdata->client->hostname);
             } break;
             case OP_STOP: {
-
+                /* unimplemented */
+            } break;
+            default: {
+                printf("nf_server: unknown request\n");
             } break;
         }
     }

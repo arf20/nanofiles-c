@@ -15,8 +15,6 @@
 
 #include <netinet/ip.h>
 
-char recv_buff[MAX_NF_BUFF_SIZE];
-
 nfc_t *
 nfc_new(const char *hostname)
 { 
@@ -75,16 +73,19 @@ nfc_test(const nfc_t *nfc)
     return *(int*)test_recv_buff == test_int;
 }
 
-int
-nfc_receive_response(const nfc_t *nfc, const char **buff)
+ssize_t
+nfc_recv(const nfc_t *nfc, const char **buff)
 {
+    char recv_buff[MAX_NF_BUFF_SIZE];
+    ssize_t res = 0;
+
     NF_TRY(
-        recv(nfc->sock, recv_buff, MAX_NF_BUFF_SIZE, 0) < 0,
-        "recv", strerror(errno), return 0
+        (res = recv(nfc->sock, recv_buff, MAX_NF_BUFF_SIZE, 0)) < 0,
+        "recv", strerror(errno), return res
     )
 
     *buff = recv_buff;
-    return 1;
+    return res;
 }
 
 int
