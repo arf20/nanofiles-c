@@ -20,7 +20,7 @@ usage(const char *argv0)
         "\t-tt:\ttest mode tcp\n"
         "\t-s host:\tdirectory server hostname\n"
         "\t-p path:\tshared path\n"
-        "\t-d debug:\tdebug\n"
+        "\t-d debug:\tdebug\n",
         argv0);
     exit(1);
 }

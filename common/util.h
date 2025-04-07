@@ -25,6 +25,9 @@
     a; \
 }
 
+#define DEBUG(c, w) if (debug) fprintf(stderr, c ": " w "\n");
+#define DEBUG_VA(c, w, ...) if (debug) fprintf(stderr, c ": " w "\n", __VA_ARGS__);
+
 int is_sha1(const char *str);
 void sha1_str2bin(const char *sha1str, uint8_t *sha1bin);
 /* sha1str must be at least 41 bytes in size */

@@ -73,18 +73,17 @@ nfc_test(const nfc_t *nfc)
     return *(int*)test_recv_buff == test_int;
 }
 
+/* low level passthrough */
 ssize_t
-nfc_recv(const nfc_t *nfc, const char **buff)
+nfc_recv(const nfc_t *nfc, char *buff, size_t len)
 {
-    char recv_buff[MAX_NF_BUFF_SIZE];
     ssize_t res = 0;
 
     NF_TRY(
-        (res = recv(nfc->sock, recv_buff, MAX_NF_BUFF_SIZE, 0)) < 0,
+        (res = recv(nfc->sock, buff, len, 0)) < 0,
         "recv", strerror(errno), return res
     )
 
-    *buff = recv_buff;
     return res;
 }
 
