@@ -13,6 +13,7 @@
 #include <string.h>
 #include <errno.h>
 #include <poll.h>
+#include <sys/time.h>
 
 #include <arpa/inet.h>
 #include <pthread.h>
@@ -154,6 +155,11 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
         fdidx++;
     }
 
+    /* get start time */
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    uint64_t t_start = (tv.tv_sec * 1000000ULL) + tv.tv_usec;
+
     /* poll loop */
     int pollres = 0, stop = 0;
     char buff[MAX_NF_BUFF_SIZE];
@@ -244,8 +250,7 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
                         off += recv_bytes;
                     }
 
-                    /* we got a chunk, write it */
-                    
+                    /* write it */
                     NF_TRY(
                         chunk_header->offset % CHUNK_SIZE,
                         "nfc_receive_response", "we did not ask for this chunk",
@@ -257,10 +262,19 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
                         1, chunk_header->size, output);
                     chunks_remaining--;
 
-                    printf("\rchunks %d bytes %ld %.2f%%",
-                        chunks - chunks_remaining, chunk_header->offset,
-                        ((float)(chunks - chunks_remaining) / (float)chunks)
-                        * 100.0f);
+                    /* nice report */
+                    gettimeofday(&tv, NULL);
+                    uint64_t delta = (tv.tv_sec * 1000000ULL) + tv.tv_usec
+                        - t_start; /* usec */
+                    int completed_chunks = chunks - chunks_remaining;
+                    size_t completed_bytes = chunk_header->offset
+                        + chunk_header->size;
+                    float perc = (float)completed_chunks / (float)chunks
+                        * 100.0f;
+                    float speed = (float)(completed_bytes / 1048576)
+                        / ((float)(delta) / 1000000.0f); /* MiB/s */
+                    printf("\rchunks %d bytes %ldB perc %.2f%% speed %.2fMiB/s",
+                        completed_chunks, completed_bytes, perc, speed);
 
                     if (chunks_remaining == 0) {
                         stop = 1;
