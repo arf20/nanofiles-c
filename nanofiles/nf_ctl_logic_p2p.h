@@ -6,10 +6,12 @@
 #include "nf_server.h"
 
 typedef struct {
+    const char *shared_dir;
+    const filedb_t *localdb;
     nfs_t *nfs;
 } logicp2p_t;
 
-logicp2p_t* logicp2p_new();
+logicp2p_t* logicp2p_new(const char *shared_dir, const filedb_t *localdb);
 int logicp2p_test_client(logicp2p_t *lp, const char *hostname);
 int logicp2p_download(const logicp2p_t *lp, const file_info_t *fi,
     FILE *output);

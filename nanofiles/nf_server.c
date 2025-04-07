@@ -1,9 +1,10 @@
 #include "nf_server.h"
 
 #include "../common/config.h"
-
 #include "../common/netutil.h"
 #include "../common/util.h"
+
+#include "nf_config.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,6 +13,7 @@
 #include <unistd.h>
 
 #include <netinet/ip.h>
+#include <arpa/inet.h>
 
 nfs_t *
 nfs_new(unsigned short port)
@@ -94,7 +96,7 @@ nfs_accept(nfs_t *nfs)
 {
     int client_sock = 0;
     struct sockaddr_in6 client_addr;
-    socklen_t addrlen;
+    socklen_t addrlen = sizeof(struct sockaddr_in6);
 
     NF_TRY(
         (client_sock = accept(nfs->accept_sock,
@@ -102,8 +104,9 @@ nfs_accept(nfs_t *nfs)
         "accept", strerror(errno), return NULL
     );
 
-    return nf_client_new(client_sock, client_addr);
+    return nfs_nfc_new(client_sock, client_addr);
 }
+
 
 void
 nfs_destroy(nfs_t *nfs)
@@ -116,17 +119,50 @@ nfs_destroy(nfs_t *nfs)
 }
 
 nf_client_t*
-nf_client_new(int sock, struct sockaddr_in6 addr)
+nfs_nfc_new(int sock, struct sockaddr_in6 addr)
 {
     nf_client_t *client = malloc(sizeof(nf_client_t));
     client->sock = sock;
     client->addr = addr;
+
+    char addr_str_buff[INET6_ADDRSTRLEN];
+    inet_ntop(AF_INET6, &addr.sin6_addr, addr_str_buff, INET6_ADDRSTRLEN);
+    client->hostname = strdup(addr_str_buff);
+
     return client;
 }
 
-void
-nf_client_destroy(nf_client_t *client)
+ssize_t
+nfs_nfc_recv(const nf_client_t *client, const char **recv_data)
 {
+    static char recv_buff[MAX_NF_BUFF_SIZE];
+    ssize_t res = 0;
+
+    NF_TRY(
+        (res = recv(client->sock, recv_buff, MAX_NF_BUFF_SIZE, 0)) < 0,
+        "recv", strerror(errno), return -1
+    );
+
+    *recv_data = recv_buff;
+    return res;
+}
+
+int
+nfs_nfc_send(const nf_client_t *client, const char *send_data, size_t size)
+{
+    int res = 0;
+    NF_TRY(
+        (res = send(client->sock, send_data, size, 0)) < 0,
+        "recv", strerror(errno), return 0
+    );
+    return 1;
+}
+
+void
+nfs_nfc_destroy(nf_client_t *client)
+{
+    close(client->sock);
+    free(client->hostname);
     free(client);
 }
 

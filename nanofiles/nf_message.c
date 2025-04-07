@@ -13,7 +13,7 @@ static char msg_buff[MAX_NF_BUFF_SIZE];
 /* client requests */
 
 size_t
-nfm_filereq(char **buff, const char *hash)
+nfm_filereq(const char **buff, const char *hash)
 {
     nf_header_filereq_t *header = (nf_header_filereq_t*)msg_buff;
     header->opcode = OP_FILEREQ;
@@ -24,7 +24,7 @@ nfm_filereq(char **buff, const char *hash)
 }
 
 size_t
-nfm_chunkreq(char **buff, unsigned int size, size_t offset)
+nfm_chunkreq(const char **buff, unsigned int size, size_t offset)
 {
     nf_header_chunk_t *header = (nf_header_chunk_t*)msg_buff;
     header->opcode = OP_CHUNKREQ;
@@ -36,7 +36,7 @@ nfm_chunkreq(char **buff, unsigned int size, size_t offset)
 }
 
 size_t
-nfm_stop(char **buff)
+nfm_stop(const char **buff)
 {
     nf_header_base_t *header = (nf_header_base_t*)msg_buff;
     header->opcode = OP_STOP;
@@ -48,7 +48,7 @@ nfm_stop(char **buff)
 /* server responses */
 
 size_t
-nfm_accepted(char **buff)
+nfm_accepted(const char **buff)
 {
     nf_header_base_t *header = (nf_header_base_t*)msg_buff;
     header->opcode = OP_ACCEPTED;
@@ -58,7 +58,7 @@ nfm_accepted(char **buff)
 }
 
 size_t
-nfm_badfilereq(char **buff)
+nfm_badfilereq(const char **buff)
 {
     nf_header_base_t *header = (nf_header_base_t*)msg_buff;
     header->opcode = OP_BADFILEREQ;
@@ -67,6 +67,7 @@ nfm_badfilereq(char **buff)
     return sizeof(nf_header_chunk_t);
 }
 
+/* only fills the header */
 size_t
 nfm_chunk(char **buff, unsigned int size, size_t offset)
 {
@@ -80,7 +81,7 @@ nfm_chunk(char **buff, unsigned int size, size_t offset)
 }
 
 size_t
-nfm_badchunkreq(char **buff)
+nfm_badchunkreq(const char **buff)
 {
     nf_header_base_t *header = (nf_header_base_t*)msg_buff;
     header->opcode = OP_BADCHUNKREQ;

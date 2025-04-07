@@ -8,16 +8,16 @@
 /* serialize directory messages from arguments */
 /* client requests */
 
-size_t nfm_filereq(char **buff, const char *hash);
-size_t nfm_chunkreq(char **buff, unsigned int size, size_t offset);
-size_t nfm_stop(char **buff);
+size_t nfm_filereq(const char **buff, const char *hash);
+size_t nfm_chunkreq(const char **buff, unsigned int size, size_t offset);
+size_t nfm_stop(const char **buff);
 
 /* peer responses */
 
-size_t nfm_accepted(char **buff);
-size_t nfm_badfilereq(char **buff);
+size_t nfm_accepted(const char **buff);
+size_t nfm_badfilereq(const char **buff);
 size_t nfm_chunk(char **buff, unsigned int size, size_t offset);
-size_t nfm_badchunkreq(char **buff);
+size_t nfm_badchunkreq(const char **buff);
 
 /* deserialize directory message */
 typedef enum {

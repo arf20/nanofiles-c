@@ -24,8 +24,8 @@ typedef struct {
 filedb_t* filedb_new();
 file_info_t* filedb_insert(filedb_t *db, const char *name,
     const char *hash, size_t size);
-file_info_t* filedb_find_name(filedb_t *db, const char *name);
-file_info_t* filedb_find_hash(filedb_t *db, const char *hash);
+file_info_t* filedb_find_name(const filedb_t *db, const char *name);
+file_info_t* filedb_find_hash(const filedb_t *db, const char *hash);
 server_list_t* sl_new();
 void sl_insert(server_list_t *sl, const char *hostname);
 int sl_exists(server_list_t *sl, const char *hostname);

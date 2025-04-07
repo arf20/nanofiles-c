@@ -90,7 +90,7 @@ nfc_receive_response(const nfc_t *nfc, const char **buff)
 int
 nfc_request_file(const nfc_t *nfc, const char *hash)
 {
-    char *buff = NULL;
+    const char *buff = NULL;
     size_t reqsize = nfm_filereq(&buff, hash);
     
     NF_TRY(
@@ -104,7 +104,7 @@ nfc_request_file(const nfc_t *nfc, const char *hash)
 int
 nfc_request_chunk(const nfc_t *nfc, size_t offset, unsigned int size)
 {
-    char *buff = NULL;
+    const char *buff = NULL;
     size_t reqsize = nfm_chunkreq(&buff, size, offset);
     
     NF_TRY(
@@ -118,7 +118,7 @@ nfc_request_chunk(const nfc_t *nfc, size_t offset, unsigned int size)
 int
 nfc_stop(const nfc_t *nfc)
 {
-    char *buff = NULL;
+    const char *buff = NULL;
     size_t reqsize = nfm_stop(&buff);
     
     NF_TRY(

@@ -2,6 +2,7 @@
 
 #include "../common/config.h"
 #include "../common/util.h"
+#include "../common/filedb.h"
 
 #include "nf_message.h"
 #include "nf_config.h"
@@ -23,9 +24,11 @@ typedef enum {
 } chunk_state_t;
 
 logicp2p_t*
-logicp2p_new()
+logicp2p_new(const char *shared_dir, const filedb_t *localdb)
 {
     logicp2p_t *lp = malloc(sizeof(logicp2p_t));
+    lp->shared_dir = shared_dir;
+    lp->localdb = localdb;
 
     return lp;
 }
@@ -246,13 +249,77 @@ logicp2p_test_server(logicp2p_t *lp)
     return res;
 }
 
+/* data type passed to recv loop */
+typedef struct {
+    const filedb_t *localdb;
+    const char *shared_dir;
+    nf_client_t *client;
+} client_loop_data_t;
+
+/* recv loop */
 static void*
 client_loop(void *arg)
 {
-    nf_client_t *client = (nf_client_t*)arg;
+    client_loop_data_t *tdata = (client_loop_data_t*)arg;
 
+    FILE *reqd_file = NULL;
 
-    nf_client_destroy(client);
+    /* recv data */
+    const char *buff = NULL;
+    ssize_t recv_size = 0;
+    while ((recv_size = nfs_nfc_recv(tdata->client, &buff)) >= 0) {
+        if (recv_size == 0) {
+            printf("nf_server(%s): empty response from client - closed?\n",
+                tdata->client->hostname);
+            break;
+        }
+
+        switch (((const nf_header_base_t*)buff)->opcode) {
+            case OP_FILEREQ: {
+                const nf_header_filereq_t *fr =
+                    (const nf_header_filereq_t*)buff;
+
+                char hashstr[41];
+                sha1_bin2str(fr->hash, hashstr);
+                
+                const file_info_t *fi =
+                    filedb_find_hash(tdata->localdb, hashstr);
+                if (!fi) {
+                    /* not found - send filereqbad */
+                    const char *send_buff = NULL;
+                    size_t send_size = nfm_badfilereq(&send_buff);
+                    nfs_nfc_send(tdata->client, send_buff, send_size);
+                    printf("nf_server(%s): filereq -> badfilereq\n",
+                        tdata->client->hostname);
+                    break;
+                }
+                
+                char path[4096];
+                snprintf(path, 4096, "%s%s", tdata->shared_dir, fi->name);
+                
+                reqd_file = fopen(path, "rb");
+                NF_TRY_C(!reqd_file, "fopen", strerror(errno), path, break);
+                
+                printf("nf_server(%s): opened %s for reading\n",
+                    tdata->client->hostname, path);
+
+                const char *send_buff = NULL;
+                size_t send_size = nfm_accepted(&send_buff);
+                nfs_nfc_send(tdata->client, send_buff, send_size);
+                printf("nf_server(%s): filereq -> accept\n",
+                    tdata->client->hostname);
+            } break;
+            case OP_CHUNKREQ: {
+
+            } break;
+            case OP_STOP: {
+
+            } break;
+        }
+    }
+
+    nfs_nfc_destroy(tdata->client);
+    free(tdata);
 
     return NULL;
 }
@@ -267,13 +334,18 @@ accept_loop(void *arg)
     do {
         client = nfs_accept(lp->nfs);
         if (client) {
+            client_loop_data_t *tdata = malloc(sizeof(client_loop_data_t));
+            tdata->shared_dir = lp->shared_dir;
+            tdata->localdb = lp->localdb;
+            tdata->client = client;
+
             pthread_t client_thread;
-            pthread_create(&client_thread, NULL, client_loop, client);
+            pthread_create(&client_thread, NULL, client_loop, tdata);
             pthread_detach(client_thread);
 
             inet_ntop(AF_INET6, &client->addr.sin6_addr, addr_str_buff,
                 INET6_ADDRSTRLEN);
-            printf("accepted client %s\n", addr_str_buff);
+            printf("nf_server: accepted client %s\n", addr_str_buff);
         }
     } while (client);
 
@@ -286,6 +358,10 @@ void
 logicp2p_start_server(logicp2p_t *lp)
 {
     lp->nfs = nfs_new(NF_DEFAULT_P2P_PORT);
+    if (!lp->nfs) {
+        printf("failed starting server\n");
+        return;
+    }
 
     printf("started accept thread\n");
     pthread_t accept_thread;

@@ -16,7 +16,7 @@ ctl_new(filedb_t *db, const char *directory_hostname, const char *shared_dir)
     ctl->ld = logicdir_new(directory_hostname);
     if (!ctl->ld)
         return NULL;
-    ctl->lp = logicp2p_new();
+    ctl->lp = logicp2p_new(shared_dir, db);
     ctl->shell = shell_new();
     ctl->db = db;
     ctl->quit = 0;

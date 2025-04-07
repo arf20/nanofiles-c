@@ -38,7 +38,7 @@ filedb_insert(filedb_t *db, const char *name, const char *hash, size_t size)
 }
 
 file_info_t*
-filedb_find_name(filedb_t *db, const char *name)
+filedb_find_name(const filedb_t *db, const char *name)
 {
     for (int i = 0; i < db->size; i++)
         if (strcmp(db->vec[i].name, name) == 0)
@@ -47,7 +47,7 @@ filedb_find_name(filedb_t *db, const char *name)
 }
 
 file_info_t*
-filedb_find_hash(filedb_t *db, const char *hash)
+filedb_find_hash(const filedb_t *db, const char *hash)
 {
     for (int i = 0; i < db->size; i++)
         if (strcmp(db->vec[i].hash, hash) == 0)
