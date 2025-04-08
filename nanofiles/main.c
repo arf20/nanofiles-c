@@ -66,6 +66,8 @@ main(int argc, char **argv)
         return 0;
     }
 
+    ctl_ping(ctl);
+
     do {
         ctl_process_command(ctl, test_mode_tcp);
     } while (!ctl->quit);

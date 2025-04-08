@@ -23,6 +23,7 @@ typedef struct {
 ctl_t* ctl_new(filedb_t *db, const char *directory_hostname,
     const char *shared_dir);
 void ctl_test_directory(ctl_t *ctl);
+void ctl_ping(ctl_t *ctl);
 void ctl_process_command(ctl_t *ctl, int test_mode_tcp);
 int ctl_should_quit(ctl_t *ctl);
 void ctl_destroy(ctl_t *ctl);

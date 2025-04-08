@@ -99,6 +99,126 @@ select_request_chunk(chunk_state_t *chunk_states, int chunks,
 }
 
 int
+op_accepted(nfc_t *peer, chunk_state_t *chunk_states, int chunks,
+    const file_info_t *fi)
+{
+    /* request chunk */
+    DEBUG("nf_connector", "-> chunkreq");
+    int res = select_request_chunk(chunk_states, chunks, peer, fi->size);
+    if (res == 0)
+        return 2;
+    return 0;
+}
+
+int
+op_badfilereq(nfc_t *peer)
+{
+    printf("nf_connector: peer %s does not have this file\n", peer->hostname);
+    return 2;
+}
+
+int
+op_chunk(nfc_t *peer, char *buff, chunk_state_t *chunk_states, int chunks,
+    FILE *output, int *chunks_remaining, uint64_t t_start,
+    const file_info_t *fi)
+{
+    /* receive rest of header */
+    size_t recv_bytes = nfc_recv(peer, buff + sizeof(nf_header_base_t),
+        sizeof(nf_header_chunk_t) - sizeof(nf_header_base_t));
+
+    if (recv_bytes <= 0) {
+        if (recv_bytes == 0)
+            printf("nf_connector: peer closed connection\n");
+        nfc_destroy(peer);
+        peer = NULL; /* uhh */
+        return 0;
+    }
+
+    if (recv_bytes <
+        sizeof(nf_header_chunk_t) - sizeof(nf_header_base_t))
+    {
+        printf("nf_connector: unexpected EOT\n");
+        return 0;
+    }
+
+    const nf_header_chunk_t *chunk_header = (const nf_header_chunk_t*)buff;
+
+    /* receive chunk data */
+    size_t off = sizeof(nf_header_chunk_t);
+    size_t remaining = chunk_header->size;
+
+    while (remaining) {
+        recv_bytes = nfc_recv(peer, buff + off, remaining);
+        if (recv_bytes <= 0) {
+            if (recv_bytes == 0)
+                printf("nf_connector: peer closed connection\n");
+            nfc_destroy(peer);
+            peer = NULL;
+            continue;
+        }
+        remaining -= recv_bytes;
+        off += recv_bytes;
+    }
+
+    /* write it */
+    NF_TRY(
+        chunk_header->offset % CHUNK_SIZE,
+        "nfc_receive_response", "we did not ask for this chunk",
+    );
+    int chunk = chunk_header->offset / CHUNK_SIZE;
+    chunk_states[chunk] = CHUNK_FINISHED;
+    
+    NF_TRY(
+        fseek(output, chunk_header->offset, SEEK_SET) < 0,
+        "fseek", strerror(errno), return 1
+    );
+
+    NF_TRY(
+        fwrite(buff + sizeof(nf_header_chunk_t), 1, chunk_header->size, output)
+            < 0,
+        "fwrite", strerror(errno), return 1
+    );
+
+    (*chunks_remaining)--;
+
+    /* nice report */
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    uint64_t delta = (tv.tv_sec * 1000000ULL) + tv.tv_usec - t_start; /* usec */
+    int completed_chunks = chunks - *chunks_remaining;
+    size_t completed_bytes = chunk_header->offset + chunk_header->size;
+    float perc = (float)completed_chunks / (float)chunks * 100.0f;
+    float speed = (float)(completed_bytes / 1048576)
+        / ((float)(delta) / 1000000.0f); /* MiB/s */
+    printf("\rchunks %d bytes %ldB perc %.2f%% speed %.2fMiB/s",
+        completed_chunks, completed_bytes, perc, speed);
+
+    if (chunks_remaining == 0)
+        return 1;
+
+    /* and request another */
+    int res = select_request_chunk(chunk_states, chunks, peer, fi->size);
+    if (res == 0)
+        return 1;
+    return 0;
+}
+
+int
+op_badchunkreq(nfc_t *peer, chunk_state_t *chunk_states, int chunks,
+    const file_info_t *fi)
+{
+    /* bad chunk request? */
+    NF_TRY(1, "nfc_receive_response", "bad chunk request", );
+    /* request another? */
+    DEBUG("nf_connector", "-> chunkreq");
+    int res = select_request_chunk(chunk_states, chunks,
+        peer, fi->size);
+    if (res == 0)
+        return 1;
+    return 0;
+}
+
+int
 logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
 {
     /* connect to all peerlist */
@@ -113,7 +233,6 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
         } else
             if (debug) printf("failed - ignored\n");
     }
-       
 
     /* divide file in chunks */
     int chunks = (fi->size / CHUNK_SIZE) + (fi->size % CHUNK_SIZE > 0);
@@ -122,7 +241,7 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
         chunk_states[i] = CHUNK_QUEUED;
     int chunks_remaining = chunks;
 
-    /* first send: tell peer what file to download */
+    /* first send: tell peers what file to download */
     for (int i = 0; i < fi->peerlist->size; i++) {
         if (!connections[i])
             continue;
@@ -141,7 +260,6 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
     } else
         printf("downloading %d chunks from %d peers...\n\n",
             chunks, peers_reached);
-
 
     /* set up fds for poll */
     struct pollfd *fds = malloc(sizeof(struct pollfd) * peers_reached);
@@ -168,6 +286,8 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
         NF_TRY(pollres == 0, "poll", "timed out, retrying...", continue);
         /* walk sockets looking for data */
         for (int i = 0; i < peers_reached; i++) {
+            nfc_t *peer = connections[fd_nfc_idx[i]];
+
             if (fds[i].revents == 0)
                 continue;
             NF_TRY(
@@ -193,113 +313,21 @@ logicp2p_download(const logicp2p_t *lp, const file_info_t *fi, FILE *output)
             switch (((const nf_header_base_t*)buff)->opcode) {
                 case OP_ACCEPTED: {
                     DEBUG("nf_connector", "<- accepted");
-                    /* request chunk */
-                    int res = select_request_chunk(chunk_states, chunks,
-                        connections[fd_nfc_idx[i]], fi->size);
-                    if (res == 0)
-                        stop = 2;
-                    DEBUG("nf_connector", "-> chunkreq");
+                    stop = op_accepted(peer, chunk_states, chunks, fi);
                 } break;
                 case OP_BADFILEREQ: {
-                    printf("nf_connector: peer %s does not have this file\n",
-                        connections[fd_nfc_idx[i]]->hostname);
-                    nfc_destroy(connections[fd_nfc_idx[i]]);
-                    stop = 2;
+                    DEBUG("nf_connector", "<- badfilereq");
+                    stop = op_badfilereq(peer);
                 } break;
                 case OP_CHUNK: {
                     DEBUG("nf_connector", "<- chunk");
-                    /* receive rest of header */
-                    recv_bytes = nfc_recv(connections[fd_nfc_idx[i]],
-                        buff + sizeof(nf_header_base_t),
-                        sizeof(nf_header_chunk_t) - sizeof(nf_header_base_t));
-
-                    if (recv_bytes <= 0) {
-                        if (recv_bytes == 0)
-                            printf("nf_connector: peer closed connection\n");
-                        nfc_destroy(connections[fd_nfc_idx[i]]);
-                        connections[fd_nfc_idx[i]] = NULL;
-                        continue;
-                    }
-
-                    if (recv_bytes <
-                        sizeof(nf_header_chunk_t) - sizeof(nf_header_base_t))
-                    {
-                        printf("nf_connector: unexpected EOT\n");
-                        break;
-                    }
-
-                    const nf_header_chunk_t *chunk_header =
-                        (const nf_header_chunk_t*)buff;
-
-                    /* receive chunk data */
-                    size_t off = sizeof(nf_header_chunk_t);
-                    size_t remaining = chunk_header->size;
-
-                    while (remaining) {
-                        recv_bytes = nfc_recv(connections[fd_nfc_idx[i]],
-                            buff + off, remaining);
-                        if (recv_bytes <= 0) {
-                            if (recv_bytes == 0)
-                                printf(
-                                    "nf_connector: peer closed connection\n");
-                            nfc_destroy(connections[fd_nfc_idx[i]]);
-                            connections[fd_nfc_idx[i]] = NULL;
-                            continue;
-                        }
-                        remaining -= recv_bytes;
-                        off += recv_bytes;
-                    }
-
-                    /* write it */
-                    NF_TRY(
-                        chunk_header->offset % CHUNK_SIZE,
-                        "nfc_receive_response", "we did not ask for this chunk",
-                    );
-                    int chunk = chunk_header->offset / CHUNK_SIZE;
-                    chunk_states[chunk] = CHUNK_FINISHED;
-                    fseek(output, chunk_header->offset, SEEK_SET);
-                    fwrite(buff + sizeof(nf_header_chunk_t),
-                        1, chunk_header->size, output);
-                    chunks_remaining--;
-
-                    /* nice report */
-                    gettimeofday(&tv, NULL);
-                    uint64_t delta = (tv.tv_sec * 1000000ULL) + tv.tv_usec
-                        - t_start; /* usec */
-                    int completed_chunks = chunks - chunks_remaining;
-                    size_t completed_bytes = chunk_header->offset
-                        + chunk_header->size;
-                    float perc = (float)completed_chunks / (float)chunks
-                        * 100.0f;
-                    float speed = (float)(completed_bytes / 1048576)
-                        / ((float)(delta) / 1000000.0f); /* MiB/s */
-                    printf("\rchunks %d bytes %ldB perc %.2f%% speed %.2fMiB/s",
-                        completed_chunks, completed_bytes, perc, speed);
-
-                    if (chunks_remaining == 0) {
-                        stop = 1;
-                        break;
-                    }
-
-                    /* and request another */
-                    int res = select_request_chunk(chunk_states, chunks,
-                        connections[fd_nfc_idx[i]], fi->size);
-                    if (res == 0) {
-                        stop = 1;
-                        break;
-                    }
-                    DEBUG("nf_connector", "-> chunkreq");
+                    stop = op_chunk(peer, buff, chunk_states, chunks, output,
+                        &chunks_remaining, t_start, fi);
                 } break;
                 case OP_BADCHUNKREQ: {
-                    /* bad chunk request? */
-                    NF_TRY(1, "nfc_receive_response", "bad chunk request", );
-                    /* request another? */
-                    int res = select_request_chunk(chunk_states, chunks,
-                        connections[fd_nfc_idx[i]], fi->size);
-                    if (res == 0)
-                        stop = 1;
                     DEBUG("nf_connector", "-> chunkreq");
-                }
+                    stop = op_badchunkreq(peer, chunk_states, chunks, fi);
+                } break;
                 default: {
                     printf("nf_client: unknown response\n");
                 } break;
