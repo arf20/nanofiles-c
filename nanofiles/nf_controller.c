@@ -54,7 +54,7 @@ ctl_help()
 void
 ctl_quit(ctl_t *ctl)
 {
-    ctl->quit = 0;
+    ctl->quit = 1;
 }
 
 void

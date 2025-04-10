@@ -20,7 +20,8 @@ shell_read_command(shell_t *shell)
 {
     static size_t cmdsize = CMD_BUFF_SIZE;
     printf("nanofiles> ");
-    getline(&shell->cmdbuff, &cmdsize, stdin);
+    if (getline(&shell->cmdbuff, &cmdsize, stdin) < 0)
+        return (cmd_arg_t){ CMD_QUIT, NULL };
     shell->cmdbuff[strlen(shell->cmdbuff) - 1] = '\0'; /* strip trailing \n */
 
     if (strlen(shell->cmdbuff) == 0)
