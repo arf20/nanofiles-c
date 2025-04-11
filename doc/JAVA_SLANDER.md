@@ -34,12 +34,19 @@ llamada, y sin ningún tipo de construcción o copia de nada. Es el kernel el qu
 coje el búfer de memoria, construye el paquete UDP, lo encapsula en un frame Ethernet
 y se lo pasa al driver de la tarjeta de red (generalmente).
 
-Aparte, Java no esta diseñado para trabajar con datos binarios facilmente, teniendo
-que serializar y deserializar todo, y ni si quiera soporta tipos enteros sin signo
-explicitamente.
+- Java no esta diseñado para trabajar con datos binarios facilmente, teniendo
+  que serializar y deserializar todo, y ni si quiera soporta tipos enteros sin signo
+  explicitamente.
 
-Aparentemente no hay forma de coger un trozo de un archivo y mandarlo por un socket
-sin copiar el bufer, lenguaje inutilizable, como se permite esto en 2025?
+- Aparentemente no hay forma de coger un trozo de un archivo y mandarlo por un socket
+  sin copiar el bufer, lenguaje inutilizable, como se permite esto en 2025?
+
+- Java es muy inflexible en cuanto a operaciones no bloqueantes. POSIX tiene la syscall
+  poll() para monitorear una lista de sockets en un solo thread, y Java tiene algo parecido
+  pero crucialmente, en C puedes responder con llamadas bloqueantes sabiendo que no se van
+  a bloquear, mientras que en Java solo puedes usar cosas no bloqueantes sobre un canal
+  con select, lo cual es pedantico y molesto.
+  
 
 ## Problemas con el código
 
@@ -68,6 +75,9 @@ sin copiar el bufer, lenguaje inutilizable, como se permite esto en 2025?
     - NFControllerP2P: "Arrancar servidor en segundo plano creando un nuevo hilo"
     - NFServer: "Añadir métodos a esta clase para: 1) Arrancar el servidor en
       un hilo nuevo que se ejecutará en segundo plano"
+    La verdadera respuesta es que hay que fijarse que NFServer implementa Runnable,
+    con lo cual es esta clase la que hay que pasar a un Thread, y run() el metodo que
+    ejecuta el Thread, siendo este declarado efectivamente en NFControllerP2P.
 
 - Ejemplo de TODO confuso e incongruente:
     - NFServer implements Runnable: "Añadir métodos a esta clase para: [...] 2) Detener el servidor (stopserver)"
@@ -100,4 +110,12 @@ sin copiar el bufer, lenguaje inutilizable, como se permite esto en 2025?
 - NanoFiles (cliente) termina inmediatamente en cuanto un comando falla.
   Cuando haces un ping y el directorio no responde, termina, en vez de dejarte
   volver a intentar
+
+- NFController.processCommand()[COM\_DOWNLOAD]: A dos metodos aislados se le pasa la misma
+  información inutil (una substring del nombre del archivo). Sin modificar estos,
+  los dos metodos necesitan el hash del archivo -> tendrian que hacer la misma request al directorio
+  para ver a que hash se corresponde (información util) para poder preguntar por
+  A. los servidores y B. a los peers, los chunks del archivo. Diseño fundamentalmente defectuoso.
+  Lo primero que se debería hacer es obtener la información util, el hash, que es con lo que
+  se debe trabajar.
 
