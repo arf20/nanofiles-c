@@ -513,9 +513,14 @@ accept_loop(void *arg)
 void
 logicp2p_start_server(logicp2p_t *lp)
 {
+    if (lp->nfs) {
+        printf("already running\n");
+        return;
+    }
+
     lp->nfs = nfs_new(NF_DEFAULT_P2P_PORT);
     if (!lp->nfs) {
-        printf("failed starting server\n");
+        printf("failed to start server\n");
         return;
     }
 
